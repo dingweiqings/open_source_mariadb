@@ -353,6 +353,7 @@ char* Parser::read_and_decrypt_file(const char *secret)
 
 // Check for file encryption
   uchar *decrypted;
+  //比对openssl加密
   if (file_size > OpenSSL_prefix_len && strncmp((char*)buffer, OpenSSL_prefix, OpenSSL_prefix_len) == 0)
   {
     uchar key[OpenSSL_key_len];
