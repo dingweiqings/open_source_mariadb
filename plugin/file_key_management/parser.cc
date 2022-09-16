@@ -167,6 +167,7 @@ bool Parser::read_filekey(const char *filekey, char *secret)
   }
 
   int len= read(f, secret, MAX_SECRET_SIZE);
+  //TODO check secret file size MDEV-25343
   if (len <= 0)
   {
     my_error(EE_READ,ME_ERROR_LOG, filekey, errno);
@@ -174,6 +175,7 @@ bool Parser::read_filekey(const char *filekey, char *secret)
     return 1;
   }
   close(f);
+  //去除换行
   while (secret[len - 1] == '\r' || secret[len - 1] == '\n') len--;
   secret[len]= '\0';
   return 0;
@@ -190,6 +192,7 @@ bool Parser::read_filekey(const char *filekey, char *secret)
 
 bool Parser::parse_file(std::map<uint,keyentry> *keys, const char *secret)
 {
+  //获取解密后的buffer
   char *buffer= read_and_decrypt_file(secret);
 
   if (!buffer)
@@ -229,7 +232,7 @@ void Parser::report_error(const char *reason, size_t position)
     ME_ERROR_LOG, reason, filename, line_number, position + 1);
 }
 
-/*
+/* 解析一行一行的AES密钥
   return 0 - new key
          1 - comment
         -1 - error
@@ -353,7 +356,7 @@ char* Parser::read_and_decrypt_file(const char *secret)
 
 // Check for file encryption
   uchar *decrypted;
-  //比对openssl加密,先key是不是一样的
+  //比对openssl加密,先看有没有encode
   if (file_size > OpenSSL_prefix_len && strncmp((char*)buffer, OpenSSL_prefix, OpenSSL_prefix_len) == 0)
   {
     uchar key[OpenSSL_key_len];
@@ -382,6 +385,7 @@ char* Parser::read_and_decrypt_file(const char *secret)
     buffer= decrypted;
     file_size= d_size;
   }
+  //如果没有encode，secret却不空
   else if (*secret)
   {
     my_printf_error(EE_READ, "Cannot decrypt %s. Not encrypted", ME_ERROR_LOG, filename);
