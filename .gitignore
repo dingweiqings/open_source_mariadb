@@ -1,3 +1,5 @@
+/BUILD
+/build
 *-t
 *.ctest
 *.reject

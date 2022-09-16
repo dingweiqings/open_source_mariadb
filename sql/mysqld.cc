@@ -5509,7 +5509,7 @@ static void test_lc_time_sz()
 }
 #endif//DBUG_OFF
 
-
+//main函数
 int mysqld_main(int argc, char **argv)
 {
 #ifndef _WIN32
@@ -5549,7 +5549,7 @@ int mysqld_main(int argc, char **argv)
 
   /* Must be initialized early for comparison of options name */
   system_charset_info= &my_charset_utf8mb3_general_ci;
-
+//初始化系统变量
   sys_var_init();
 
 #ifdef WITH_PERFSCHEMA_STORAGE_ENGINE
@@ -7583,7 +7583,7 @@ static int option_cmp(my_option *a, my_option *b)
   }
   return 0;
 }
-
+//打印help信息
 static void print_help()
 {
   MEM_ROOT mem_root;
@@ -7592,19 +7592,22 @@ static void print_help()
   pop_dynamic(&all_options);
   add_many_options(&all_options, pfs_early_options,
                   array_elements(pfs_early_options));
+                  //sys var add
   sys_var_add_options(&all_options, sys_var::PARSE_EARLY);
   add_plugin_options(&all_options, &mem_root);
   sort_dynamic(&all_options, (qsort_cmp) option_cmp);
   sort_dynamic(&all_options, (qsort_cmp) option_cmp);
   add_terminator(&all_options);
-
+//打印option信息
   my_print_help((my_option*) all_options.buffer);
 
   /* Add variables that must be shown but not changed, like version numbers */
   pop_dynamic(&all_options);
   sys_var_add_options(&all_options, sys_var::GETOPT_ONLY_HELP);
+  //按照字母排序
   sort_dynamic(&all_options, (qsort_cmp) option_cmp);
   add_terminator(&all_options);
+  //打印变量
   my_print_variables((my_option*) all_options.buffer);
 
   free_root(&mem_root, MYF(0));
