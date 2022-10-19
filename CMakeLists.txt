@@ -604,3 +604,9 @@ IF(NOT WITHOUT_SERVER)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/mysql-test)
   ADD_DEPENDENCIES(smoketest minbuild)
 ENDIF()
+FILE(GLOB plugin ${CMAKE_CURRENT_BINARY_DIR}/plugin/**/*.so)
+ADD_CUSTOM_TARGET(copy-plugin 
+COMMAND ${CMAKE_COMMAND} -E 
+copy_if_different  
+       ${plugin}   ${CMAKE_CURRENT_BINARY_DIR}/plugin-output-dir/
+)
