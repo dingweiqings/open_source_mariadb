@@ -26,6 +26,9 @@ MYSQL_ADD_PLUGIN(connection_control
   event_handler.cc 
   timer.cc
   memory_store.cc
+  lock.cc
+  action.cc
+  coordinator.cc
   DEFAULT RECOMPILE_FOR_EMBEDDED
   )
 # file(GLOB lib ${CMAKE_BINARY_DIR}/sql/*.a)

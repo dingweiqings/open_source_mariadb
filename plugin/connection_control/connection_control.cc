@@ -27,6 +27,7 @@
 #include <mysql/plugin.h>
 #include "table.h"
 #include "field.h"
+#include"data.h"
 
 /**
   check() function for connection_control_max_connection_delay
@@ -43,20 +44,20 @@
     @retval 1 Value is not within valid bounds
 */
 
-static int check_max_connection_delay(MYSQL_THD thd [[maybe_unused]],
-                                       struct st_mysql_sys_var *var [[maybe_unused]],
-                                      void *save [[maybe_unused]],
+static int check_max_connection_delay(MYSQL_THD thd ,
+                                       struct st_mysql_sys_var *var ,
+                                      void *save ,
                                       struct st_mysql_value *value) {
-  // long long new_value;
-  // int64 existing_value = g_variables.min_connection_delay;
-  // if (value->val_int(value, &new_value)) return 1; /* NULL value */
-
-  // if (new_value >= connection_control::MIN_DELAY &&
-  //     new_value <= connection_control::MAX_DELAY &&
-  //     new_value >= existing_value) {
-  //   *(reinterpret_cast<longlong *>(save)) = new_value;
-  //   return 0;
-  // }
+  long long new_value;
+  uint64 existing_value = coordinator.g_variables.getMaxConnectionDelay();
+  if (value->val_int(value, &new_value)) return 1; /* NULL value */
+   uint64 curValue=(uint64)new_value;
+  if (curValue >= connection_control::MIN_DELAY &&
+      curValue <= connection_control::MAX_DELAY &&
+      curValue >= existing_value) {
+    *(reinterpret_cast<longlong *>(save)) = new_value;
+    return 0;
+  }
   return 1;
 }
 
@@ -72,15 +73,12 @@ static int check_max_connection_delay(MYSQL_THD thd [[maybe_unused]],
   @param save       New value for connection_control_max_connection_delay
 */
 
-static void update_max_connection_delay(MYSQL_THD thd [[maybe_unused]],
-                                        struct st_mysql_sys_var *var [[maybe_unused]],
-                                        void *var_ptr [[maybe_unused]],
+static void update_max_connection_delay(MYSQL_THD thd ,
+                                        struct st_mysql_sys_var *var ,
+                                        void *var_ptr ,
                                         const void *save) {
-  // longlong new_value = *(reinterpret_cast<const longlong *>(save));
-  // g_variables.max_connection_delay = (int64)new_value;
-  // Connection_control_error_handler error_handler;
-  // g_connection_event_coordinator->notify_sys_var(
-  //     &error_handler, OPT_MAX_CONNECTION_DELAY, &new_value);
+  long long new_value = *(reinterpret_cast<const longlong *>(save));
+  coordinator.g_variables.setMaxDelay((uint64)new_value);
   return;
 }
 

@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<mysql/plugin_audit.h>
+#include"coordinator.h"
 class Connection_event_handler{
 public:
  void release_thd(MYSQL_THD THD);

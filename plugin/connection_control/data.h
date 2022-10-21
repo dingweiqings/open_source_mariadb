@@ -1,8 +1,10 @@
 #include <my_global.h>
 #include "memory_store.h"
-
+#include<limits.h>
 namespace connection_control {
 /** Structure to maintain system variables */
+uint64 MIN_DELAY=1;
+uint64 MAX_DELAY=UINT64_MAX;
 class Connection_control_variables {
  private:
   /* Various global variables */
@@ -30,13 +32,13 @@ class Connection_control_variables {
     return max_connection_delay;
   }
 
-   void  setFailedConnectionsThreshold(int64 value){
+   void  setFailedConnectionsThreshold(uint64 value){
     failed_connections_threshold=value;
   }
-  void  setMinDelay(int64 value){
+  void  setMinDelay(uint64 value){
      min_connection_delay=value;
   }
-  void setMaxDelay(int value){
+  void setMaxDelay(uint64 value){
      max_connection_delay=value;
   }
 

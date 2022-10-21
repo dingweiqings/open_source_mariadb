@@ -1,10 +1,9 @@
 #include"event_handler.h"
 #include<map>
 #include<iostream>
-#include"coordinator.h"
+
 #include<string.h>
  Memory_store<std::string,uint64> data_store=Memory_store<std::string,uint64>();
-Connection_control_coordinator coordinator=Connection_control_coordinator(10,100,1);
 //std::map<std::string,uint32_t> map;
 void Connection_event_handler::release_thd(MYSQL_THD THD){
           printf("%s \n","HelloWorld-ReleaseTHD");
