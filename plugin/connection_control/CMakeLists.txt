@@ -27,7 +27,6 @@ MYSQL_ADD_PLUGIN(connection_control
   timer.cc
   memory_store.cc
   lock.cc
-  action.cc
   coordinator.cc
   DEFAULT RECOMPILE_FOR_EMBEDDED
   )

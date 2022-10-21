@@ -1,7 +1,6 @@
 #include"event_handler.h"
 #include<map>
 #include<iostream>
-
 #include<string.h>
  Memory_store<std::string,uint64> data_store=Memory_store<std::string,uint64>();
 //std::map<std::string,uint32_t> map;

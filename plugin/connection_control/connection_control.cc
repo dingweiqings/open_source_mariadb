@@ -27,7 +27,6 @@
 #include <mysql/plugin.h>
 #include "table.h"
 #include "field.h"
-#include"data.h"
 
 /**
   check() function for connection_control_max_connection_delay
