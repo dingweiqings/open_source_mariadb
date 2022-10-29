@@ -1,22 +1,28 @@
-#include"mysql/plugin.h"
-#include"my_global.h"
-#include "mysql/psi/mysql_thread.h"
+#ifndef CONNECTION_CONTROL_H
+#define CONNECTION_CONTROL_H
+
+#ifndef MY_GLOBAL_H
+#define MY_GLOBAL_H
+#include <my_global.h>
+#endif
+#ifndef PSI_H
+#include"mysql/psi/mysql_thread.h"
+#include"mysql/psi/psi.h"
+#endif
+#endif 
+// #include"my_sys.h"
+// #include"pfs_memory_provider.h"
+// #include"pfs_thread_provider.h"
+// /* The following are for THD_ENTER_COND: */
+
+// #include "sql_priv.h"
+// #include "my_decimal.h"
+// #include "sql_class.h"
+
 
 namespace connection_control {
-
+//TODO 使用继承来做
 class Lock {
-private:
-//mysql_rwlock_t m_lock;
-mysql_cond_t m_cond;
-PSI_mutex_key key_connection_delay_mutex;
-//PSI_rwlock_key key_connection_event_delay_lock;
-PSI_cond_key key_connection_delay_wait;
-PSI_stage_info stage_waiting_in_connection_control_plugin;
-public:
-Lock();
-~Lock();
-//void rw_lock();
-void condition_wait(MYSQL_THD thd,u_int64_t time);
-//void unlock();
-};
+
 }  // namespace connection_control
+}

@@ -18,21 +18,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/sql)
-file(GLOB SQLFILE   ${CMAKE_SOURCE_DIR}/sql/*.cc)
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  US
 MYSQL_ADD_PLUGIN(connection_control
   connection_control.cc 
-  event_handler.cc 
-  timer.cc
-  memory_store.cc
-  lock.cc
   coordinator.cc
-  DEFAULT RECOMPILE_FOR_EMBEDDED
-  )
+
+  event_handler.cc 
+  memory_store.cc
+
+   DEFAULT RECOMPILE_FOR_EMBEDDED
+   )
+  # MYSQL_ADD_PLUGIN(connection_control
+  # lock.cc
+  # DEFAULT RECOMPILE_FOR_EMBEDDED
+  # )
+  SET(CMAKE_C_STANDARD 99)
+  SET(CMAKE_CXX_STANDARD 11)
 # file(GLOB lib ${CMAKE_BINARY_DIR}/sql/*.a)
 # # MESSAGE(1  ${CMAKE_BINARY_DIR}/sql/CMakeFiles/sql.dir/ *.o)
 # # MESSAGE(1 ${lib})
 # target_link_libraries(connection_control ${lib})
 # MESSAGE(1 ${lib})
-# # ADD_DEFINITIONS(-DLOG_COMPONENT_TAG="CONNECTION_CONTROL")
+# ADD_DEFINITIONS(-DMYSQL_SERVER )
+# ADD_DEFINITIONS(-DUSE_PSI_1 ) 
+# ADD_DEFINITIONS(-DWITH_PERFSCHEMA_STORAGE_ENGINE)

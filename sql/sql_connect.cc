@@ -1079,6 +1079,7 @@ static int check_connection(THD *thd)
   }
 
   auth_rc= acl_authenticate(thd, 0);
+
   if (auth_rc == 0 && connect_errors != 0)
   {
     /*
@@ -1146,7 +1147,6 @@ bool login_connection(THD *thd)
   my_net_set_write_timeout(net, connect_timeout);
 
   error= check_connection(thd);
-  thd->protocol->end_statement();
 
   if (unlikely(error))
   {						// Wrong permissions
@@ -1159,8 +1159,11 @@ bool login_connection(THD *thd)
     goto exit;
   }
   /* Connect completed, set read/write timeouts back to default */
-  my_net_set_read_timeout(net, thd->variables.net_read_timeout);
-  my_net_set_write_timeout(net, thd->variables.net_write_timeout);
+  if (!error)
+  {
+    my_net_set_read_timeout(net, thd->variables.net_read_timeout);
+    my_net_set_write_timeout(net, thd->variables.net_write_timeout);
+  }
 
   /*  Updates global user connection stats. */
   if (increment_connection_count(thd, TRUE))
@@ -1172,6 +1175,7 @@ bool login_connection(THD *thd)
 
 exit:
   mysql_audit_notify_connection_connect(thd);
+  thd->protocol->end_statement();
   DBUG_RETURN(error);
 }
 

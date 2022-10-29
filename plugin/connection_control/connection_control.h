@@ -19,3 +19,19 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
+#include <my_global.h>
+#include<stdint.h>
+namespace connection_control{
+int64 DEFAULT_MIN_DELAY=1000;   
+int64 MIN_DELAY=1000;
+
+
+int64 DEFAULT_MAX_DELAY=INT64_MAX;   
+int64 MAX_DELAY=INT64_MAX;
+
+
+int64 DEFAULT_THRESHOLD=3;
+int64 MIN_THRESHOLD=3;
+int64 MAX_THRESHOLD=1000;
+
+}
