@@ -29,7 +29,7 @@ public:
   void foreach(std::function<void (std::pair<K,V>)> const &f)  {
     std::for_each(m_dataMap.cbegin(),m_dataMap.cend(),f);
   }
-
+  
   void print()
   {
     // m_dataMap.insert(pair<K,V>(name,value));

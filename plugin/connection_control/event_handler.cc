@@ -3,12 +3,7 @@
 #include <iostream>
 #include <string.h>
 
-namespace connection_control
-{
-extern int64 DEFAULT_THRESHOLD;
-extern int64 DEFAULT_MIN_DELAY;
-extern int64 DEFAULT_MAX_DELAY;
-}; // namespace connection_control
+
 
 Memory_store<std::string, int64> data_store;
 connection_control::Connection_control_coordinator coordinator=
@@ -45,6 +40,7 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
                connection_event->host, connection_event->ip,
                connection_event->user, connection_event->thread_id);
         int64 current_count= 0;
+        coordinator.write_lock();
         if (data_store.contains(connection_key))
         {
           int64 present_count= data_store.find(connection_key);
@@ -58,11 +54,14 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
         }
 
         data_store.print();
+        coordinator.unlock();
         coordinator.coordinate(current_count, THD);
       }
       else
       {
+        coordinator.write_lock();
         data_store.erase(connection_key);
+        coordinator.unlock();
       }
     }
   }

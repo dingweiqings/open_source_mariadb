@@ -21,14 +21,14 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
 
 #include "connection_control.h"
-#include"event_handler.h"
+#include "event_handler.h"
 #include "mysql/psi/mysql_stage.h"
-#include <stddef.h>
-#include<stdio.h>
+#include <cstddef>
+#include <cstdio>
 #include <mysql/plugin.h>
 #include "table.h"
 #include "field.h"
-#include"sql_acl.h"
+#include "sql_acl.h"
 #define DEFAULT_CONFIG
 
 extern Memory_store<std::string, int64> data_store;
@@ -49,24 +49,23 @@ static ST_FIELD_INFO failed_attempts_view_fields[]= {
 
 int fill_failed_attempts_view(THD *thd, TABLE_LIST *tables, Item *cond)
 {
-  if (check_global_access(thd, PROCESS_ACL, true)){
-    		push_warning_printf(
-			thd, Sql_condition::WARN_LEVEL_WARN,
-			ER_WRONG_ARGUMENTS,
-			"Access denied!");
-      return 0;
+  if (check_global_access(thd, PROCESS_ACL, true))
+  {
+    push_warning_printf(thd, Sql_condition::WARN_LEVEL_WARN,
+                        ER_WRONG_ARGUMENTS, "Access denied!");
+    return 0;
   }
-    
-  TABLE *table= tables->table;
-    // Get all data
-    data_store.foreach ([table](std::pair<std::string, int64> pair) {
-      table->field[0]->store(pair.first.c_str(), pair.first.length(),
-                             system_charset_info);
-      table->field[1]->store(pair.second, true);
-    });
-  
 
-  schema_table_store_record(thd, table);
+  TABLE *table= tables->table;
+  int64 i= 0;
+  // Get all data
+  data_store.foreach ([table, thd, i](std::pair<std::string, int64> pair) {
+    table->field[0]->store(pair.first.c_str(), pair.first.length(),
+                           system_charset_info);
+    table->field[1]->store(pair.second, true);
+    schema_table_store_record(thd, table);
+  });
+
   return 0;
 }
 
@@ -280,8 +279,7 @@ static void update_failed_connections_threshold(MYSQL_THD thd,
   */
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   failed_connections_threshold= new_value;
-  coordinator.getGVariables()
-      .setFailedConnectionsThreshold(new_value);
+  coordinator.getGVariables().setFailedConnectionsThreshold(new_value);
   return;
 }
 
@@ -333,11 +331,9 @@ static void update_min_connection_delay(MYSQL_THD thd,
                                         struct st_mysql_sys_var *var,
                                         void *var_ptr, const void *save)
 {
-  // TODO add lock
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   min_connection_delay= new_value;
-  coordinator.getGVariables().setMinDelay(
-      (int64) new_value);
+  coordinator.getGVariables().setMinDelay((int64) new_value);
   return;
 }
 
@@ -382,21 +378,24 @@ static struct st_mysql_sys_var *connection_control_system_variables[3]= {
   @returns Always returns success.
 */
 
-static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff,struct system_status_var *status_var, enum enum_var_type)
+static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff,
+                                struct system_status_var *status_var,
+                                enum enum_var_type)
 {
   var->type= SHOW_LONGLONG;
   var->value= buff;
   longlong *value= reinterpret_cast<longlong *>(buff);
-  // TODO 统计失败的次数
-  *value=1;
+  int64 sum= 0;
+  data_store.foreach (
+      [&sum](std::pair<std::string, int64> pair) { sum+= pair.second; });
+  *value= sum;
   return 0;
 }
 
 /** Array of status variables. Used in plugin declaration. */
 struct st_mysql_show_var connection_control_status_variables[]= {
     {"Connection_control_delay_generated", (char *) &show_delay_generated,
-      enum_mysql_show_type::SHOW_FUNC}};
-
+     enum_mysql_show_type::SHOW_FUNC}};
 
 /**
  * @brief EventHandler declaration
@@ -419,24 +418,20 @@ struct st_mysql_audit plugin_main_handler= {
     {MYSQL_AUDIT_CONNECTION_CLASSMASK} /* Add table and general event mask*/
 };
 
-maria_declare_plugin(connection_control)
-    {
-      MYSQL_AUDIT_PLUGIN,
-      &plugin_main_handler,
-      "connection_control",
-      "KurtDing",
-      "connection_control desc",
-      PLUGIN_LICENSE_GPL,
-      connection_control_init,
-      connection_control_deinit,
-      0x0100,
-      connection_control_status_variables,
-      connection_control_system_variables,
-      "1.0",
-      MariaDB_PLUGIN_MATURITY_STABLE
-      },
-    {
-      MYSQL_INFORMATION_SCHEMA_PLUGIN,
+maria_declare_plugin(connection_control){MYSQL_AUDIT_PLUGIN,
+                                         &plugin_main_handler,
+                                         "connection_control",
+                                         "KurtDing",
+                                         "connection_control desc",
+                                         PLUGIN_LICENSE_GPL,
+                                         connection_control_init,
+                                         connection_control_deinit,
+                                         0x0100,
+                                         connection_control_status_variables,
+                                         connection_control_system_variables,
+                                         "1.0",
+                                         MariaDB_PLUGIN_MATURITY_STABLE},
+    {MYSQL_INFORMATION_SCHEMA_PLUGIN,
      &connection_control_failed_attempts_view,
      "CONNECTION_CONTROL_FAILED_LOGIN_ATTEMPTS",
      "KurtDing",
@@ -448,6 +443,4 @@ maria_declare_plugin(connection_control)
      NULL,
      NULL,
      "1.0",
-     MariaDB_PLUGIN_MATURITY_STABLE
-     } 
-     maria_declare_plugin_end;
+     MariaDB_PLUGIN_MATURITY_STABLE} maria_declare_plugin_end;

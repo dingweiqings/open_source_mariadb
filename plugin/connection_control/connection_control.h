@@ -22,16 +22,16 @@
 #include <my_global.h>
 #include<stdint.h>
 namespace connection_control{
-int64 DEFAULT_MIN_DELAY=1000;   
-int64 MIN_DELAY=1000;
+extern  int64 DEFAULT_MIN_DELAY;   
+extern int64 MIN_DELAY;
 
 
-int64 DEFAULT_MAX_DELAY=INT64_MAX;   
-int64 MAX_DELAY=INT64_MAX;
+extern int64 DEFAULT_MAX_DELAY;   
+extern int64 MAX_DELAY;
 
 
-int64 DEFAULT_THRESHOLD=3;
-int64 MIN_THRESHOLD=3;
-int64 MAX_THRESHOLD=1000;
+extern int64 DEFAULT_THRESHOLD;
+extern int64 MIN_THRESHOLD;
+extern int64 MAX_THRESHOLD;
 
 }

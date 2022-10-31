@@ -23,24 +23,29 @@ class Lock
 private:
   // update var lock
   mysql_rwlock_t m_lock;
-  PSI_rwlock_key m_update_sys_var_lock_key;
+  PSI_rwlock_key data_store_lock_key;
 
 public:
   Lock();
   ~Lock();
   void rw_lock();
+  void rd_lock();
   void condition_wait(MYSQL_THD thd, int64 time);
   void unlock();
 };
 
 Lock::Lock()
 {
-  m_update_sys_var_lock_key= 1;
-  mysql_rwlock_init(m_update_sys_var_lock_key, &m_lock);
+  data_store_lock_key= 1;
+  mysql_rwlock_init(data_store_lock_key, &m_lock);
 }
 Lock::~Lock() { mysql_rwlock_destroy(&m_lock); }
 void Lock::rw_lock() { mysql_rwlock_wrlock(&m_lock); }
+void Lock::rd_lock(){mysql_rwlock_rdlock(&m_lock); }
 void Lock::unlock() { mysql_rwlock_unlock(&m_lock); }
+
+
+
 void Lock::condition_wait(MYSQL_THD thd, int64 time)
 {
   /** mysql_cond_timedwait requires wait time in timespec format */
@@ -115,5 +120,13 @@ bool Connection_control_coordinator::coordinate(int64 failed_count,
   }
   return true;
 }
-
+void Connection_control_coordinator::read_lock(){
+  m_lock->rw_lock();
+}
+void Connection_control_coordinator::write_lock(){
+  m_lock->rd_lock();
+}
+void Connection_control_coordinator::unlock(){
+  m_lock->unlock();
+}
 } // namespace connection_control

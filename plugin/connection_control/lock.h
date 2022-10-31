@@ -24,5 +24,11 @@ namespace connection_control {
 //TODO 使用继承来做
 class Lock {
 
+
+
+
+
+
+
 }  // namespace connection_control
 }

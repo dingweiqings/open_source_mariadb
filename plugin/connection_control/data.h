@@ -4,7 +4,17 @@
 #include <limits.h>
 namespace connection_control
 {
-/** Structure to maintain system variables */
+int64 DEFAULT_MIN_DELAY=1000;   
+int64 MIN_DELAY=1000;
+
+
+int64 DEFAULT_MAX_DELAY=INT64_MAX;   
+int64 MAX_DELAY=INT64_MAX;
+
+
+int64 DEFAULT_THRESHOLD=3;
+int64 MIN_THRESHOLD=3;
+int64 MAX_THRESHOLD=1000;
 
 class Connection_control_variables
 {
@@ -35,27 +45,5 @@ public:
   }
   void setMinDelay(int64 value) { min_connection_delay= value; }
   void setMaxDelay(int64 value) { max_connection_delay= value; }
+}
 };
-
-/** Structure to maintain statistics */
-class Connection_control_statistics
-{
-};
-// class Connection{
-//     private:
-//     std:string m_username;
-//     std:string m_host;
-//     public:
-//     std::string getUsername(){
-//         return m_username;
-//     }
-//     std::string getHost(){
-//         return m_host;
-//     }
-//         std::string getConnectionKey(){
-//         return m_username+m_host;
-//     }
-
-// }
-
-} // namespace connection_control

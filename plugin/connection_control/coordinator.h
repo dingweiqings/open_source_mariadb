@@ -16,6 +16,9 @@ public:
         return g_variables;
     }
     void condition_wait(MYSQL_THD thd,int64 time);
+    void read_lock();
+    void write_lock();
+    void unlock();
 };
 }
 
