@@ -215,6 +215,7 @@ my @DEFAULT_SUITES= qw(
     versioning-
     period-
     sysschema-
+    connection_control
   );
 my $opt_suites;
 

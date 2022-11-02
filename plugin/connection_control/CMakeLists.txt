@@ -26,19 +26,17 @@ MYSQL_ADD_PLUGIN(connection_control
   event_handler.cc 
   memory_store.cc
 
-   DEFAULT RECOMPILE_FOR_EMBEDDED
+  MODULE_ONLY
    )
-  # MYSQL_ADD_PLUGIN(connection_control
-  # lock.cc
-  # DEFAULT RECOMPILE_FOR_EMBEDDED
-  # )
+
   SET(CMAKE_C_STANDARD 99)
   SET(CMAKE_CXX_STANDARD 11)
-# file(GLOB lib ${CMAKE_BINARY_DIR}/sql/*.a)
+file(GLOB lib ${CMAKE_BINARY_DIR}/sql/libsq1.a)
+file(GLOB lib1 ${CMAKE_BINARY_DIR}/mysys/*.a)
 # # MESSAGE(1  ${CMAKE_BINARY_DIR}/sql/CMakeFiles/sql.dir/ *.o)
 # # MESSAGE(1 ${lib})
-# target_link_libraries(connection_control ${lib})
+target_link_libraries(connection_control ${lib1} ${lib})
 # MESSAGE(1 ${lib})
-# ADD_DEFINITIONS(-DMYSQL_SERVER )
+ADD_DEFINITIONS(-DMYSQL_SERVER )
 # ADD_DEFINITIONS(-DUSE_PSI_1 ) 
 # ADD_DEFINITIONS(-DWITH_PERFSCHEMA_STORAGE_ENGINE)

@@ -42,3 +42,4 @@ ha_federated       storage/federated  FEDERATED_PLUGIN
 mypluglib          plugin/fulltext    SIMPLE_PARSER
 libdaemon_example  plugin/daemon_example DAEMONEXAMPLE
 adt_null           plugin/audit_null  AUDIT_NULL
+connection_control  plugin/connection_control   CONNECTION_CONTROL_PLUGIN    connection_control

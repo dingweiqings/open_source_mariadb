@@ -28,7 +28,7 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
     // Only record for connection ,not disconnection
     if (connection_event->event_subclass == MYSQL_AUDIT_CONNECTION_CONNECT)
     {
-      std::string connection_key= std::string(connection_event->user) + "%" +
+       std::string connection_key= std::string(connection_event->user) + "%" +
                                   std::string(connection_event->host);
       if (connection_event->status)
       {
@@ -59,9 +59,9 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
       }
       else
       {
-        coordinator.write_lock();
+    //    coordinator.write_lock();
         data_store.erase(connection_key);
-        coordinator.unlock();
+ //       coordinator.unlock();
       }
     }
   }

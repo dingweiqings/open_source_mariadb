@@ -29,7 +29,6 @@
 #include "table.h"
 #include "field.h"
 #include "sql_acl.h"
-#define DEFAULT_CONFIG
 
 extern Memory_store<std::string, int64> data_store;
 extern connection_control::Connection_control_coordinator coordinator;
@@ -94,7 +93,7 @@ PSI_mutex_key key_connection_delay_mutex= PSI_NOT_INSTRUMENTED;
 static PSI_mutex_info all_connection_delay_mutex_info[]= {
     {&key_connection_delay_mutex, "connection_delay_mutex", 0}};
 
-PSI_rwlock_key key_connection_event_delay_lock;
+PSI_rwlock_key key_connection_event_delay_lock=PSI_NOT_INSTRUMENTED;
 
 static PSI_rwlock_info all_connection_delay_rwlock_info[]= {
     {&key_connection_event_delay_lock, "connection_event_delay_lock", 0}};

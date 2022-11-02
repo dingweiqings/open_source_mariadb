@@ -2,20 +2,9 @@
 
 #include "memory_store.h"
 #include <limits.h>
+
 namespace connection_control
 {
-int64 DEFAULT_MIN_DELAY=1000;   
-int64 MIN_DELAY=1000;
-
-
-int64 DEFAULT_MAX_DELAY=INT64_MAX;   
-int64 MAX_DELAY=INT64_MAX;
-
-
-int64 DEFAULT_THRESHOLD=3;
-int64 MIN_THRESHOLD=3;
-int64 MAX_THRESHOLD=1000;
-
 class Connection_control_variables
 {
 private:
@@ -45,5 +34,5 @@ public:
   }
   void setMinDelay(int64 value) { min_connection_delay= value; }
   void setMaxDelay(int64 value) { max_connection_delay= value; }
-}
+};
 };

@@ -1,6 +1,14 @@
 #include "coordinator.h"
 #include "my_sys.h"
 #include "my_pthread.h"
+#include"mysql/psi/mysql_thread.h"
+#include"mysql/psi/psi.h"
+
+extern PSI_mutex_key key_connection_delay_mutex;
+extern PSI_rwlock_key key_connection_event_delay_lock;
+extern PSI_cond_key key_connection_delay_wait;
+extern PSI_stage_info stage_waiting_in_connection_control_plugin;
+extern Memory_store<std::string, int64> data_store;
 /* Forward declaration */
 void thd_enter_cond(MYSQL_THD thd, mysql_cond_t *cond, mysql_mutex_t *mutex,
                     const PSI_stage_info *stage, PSI_stage_info *old_stage,
@@ -10,43 +18,27 @@ void thd_exit_cond(MYSQL_THD thd, const PSI_stage_info *stage,
                    const char *src_function, const char *src_file,
                    int src_line);
 
-extern PSI_mutex_key key_connection_delay_mutex;
-extern PSI_rwlock_key key_connection_event_delay_lock;
-extern PSI_cond_key key_connection_delay_wait;
-extern PSI_stage_info stage_waiting_in_connection_control_plugin;
-extern Memory_store<std::string,int64> data_store;
 namespace connection_control
 {
 
 class Lock
 {
 private:
-  // update var lock
-  mysql_rwlock_t m_lock;
-  PSI_rwlock_key data_store_lock_key;
-
+  mysql_rwlock_t  m_lock;
 public:
-  Lock();
-  ~Lock();
-  void rw_lock();
-  void rd_lock();
-  void condition_wait(MYSQL_THD thd, int64 time);
-  void unlock();
+Lock(){
+  mysql_rwlock_init(key_connection_event_delay_lock,&m_lock);
+}
+  ~Lock() { mysql_rwlock_destroy(&m_lock); }
+  void read_lock() { mysql_rwlock_rdlock(&m_lock); }
+  void write_lock() {
+        
+            mysql_rwlock_wrlock(&m_lock);
+   }
+  void unlock() { mysql_rwlock_unlock(&m_lock); }
 };
 
-Lock::Lock()
-{
-  data_store_lock_key= 1;
-  mysql_rwlock_init(data_store_lock_key, &m_lock);
-}
-Lock::~Lock() { mysql_rwlock_destroy(&m_lock); }
-void Lock::rw_lock() { mysql_rwlock_wrlock(&m_lock); }
-void Lock::rd_lock(){mysql_rwlock_rdlock(&m_lock); }
-void Lock::unlock() { mysql_rwlock_unlock(&m_lock); }
-
-
-
-void Lock::condition_wait(MYSQL_THD thd, int64 time)
+void condition_wait(MYSQL_THD thd, int64 time)
 {
   /** mysql_cond_timedwait requires wait time in timespec format */
   struct timespec abstime;
@@ -113,20 +105,14 @@ bool Connection_control_coordinator::coordinate(int64 failed_count,
   // Failed up to threshold
   if (failed_count > g_variables.getFailedConnectionsThreshold())
   {
-    //TODO add coordinator strategy
+    // TODO add coordinator strategy
     std::cout << "Now sleep 5s" << std::endl;
-    m_lock->condition_wait(THD, 5000);
+    condition_wait(THD, 5000);
     std::cout << "Sleep 5s end" << std::endl;
   }
   return true;
 }
-void Connection_control_coordinator::read_lock(){
-  m_lock->rw_lock();
-}
-void Connection_control_coordinator::write_lock(){
-  m_lock->rd_lock();
-}
-void Connection_control_coordinator::unlock(){
-  m_lock->unlock();
-}
+void Connection_control_coordinator::read_lock() { m_lock->read_lock(); }
+void Connection_control_coordinator::write_lock() { m_lock->write_lock(); }
+void Connection_control_coordinator::unlock() { m_lock->unlock(); }
 } // namespace connection_control
