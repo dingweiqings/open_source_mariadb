@@ -1,8 +1,5 @@
 #include <my_global.h>
 
-#include "memory_store.h"
-#include <limits.h>
-
 namespace connection_control
 {
 class Connection_control_variables
@@ -35,4 +32,4 @@ public:
   void setMinDelay(int64 value) { min_connection_delay= value; }
   void setMaxDelay(int64 value) { max_connection_delay= value; }
 };
-};
+}; // namespace connection_control

@@ -29,62 +29,15 @@
 #include "table.h"
 #include "field.h"
 #include "sql_acl.h"
-
-extern Memory_store<std::string, int64> data_store;
-extern connection_control::Connection_control_coordinator coordinator;
-
-struct st_mysql_information_schema connection_control_failed_attempts_view= {
-    MYSQL_INFORMATION_SCHEMA_INTERFACE_VERSION};
-
-namespace Show
-{
-
-static ST_FIELD_INFO failed_attempts_view_fields[]= {
-    Column("USER_HOST", Varchar(USERNAME_LENGTH + HOSTNAME_LENGTH + 8),
-           NOT_NULL, "User_host"),
-    Column("FAILED_ATTEMPTS", ULong(), NOT_NULL, "Failed_attempts"), CEnd()};
-
-} // namespace Show
-
-int fill_failed_attempts_view(THD *thd, TABLE_LIST *tables, Item *cond)
-{
-  if (check_global_access(thd, PROCESS_ACL, true))
-  {
-    push_warning_printf(thd, Sql_condition::WARN_LEVEL_WARN,
-                        ER_WRONG_ARGUMENTS, "Access denied!");
-    return 0;
-  }
-
-  TABLE *table= tables->table;
-  int64 i= 0;
-  // Get all data
-  data_store.foreach ([table, thd, i](std::pair<std::string, int64> pair) {
-    table->field[0]->store(pair.first.c_str(), pair.first.length(),
-                           system_charset_info);
-    table->field[1]->store(pair.second, true);
-    schema_table_store_record(thd, table);
-  });
-
-  return 0;
-}
-
+#include"memory_store.h"
+#include"coordinator.h"
+ Memory_store<std::string, int64>* data_store=nullptr;
+ connection_control::Connection_control_coordinator* coordinator=nullptr;
 /**
-  View init function
-
-  @param [in] ptr    Handle to
-                     information_schema.connection_control_failed_attempts.
-
-  @returns Always returns 0.
-*/
-
-int connection_control_failed_attempts_view_init(void *ptr)
-{
-  ST_SCHEMA_TABLE *schema_table= (ST_SCHEMA_TABLE *) ptr;
-
-  schema_table->fields_info= Show::failed_attempts_view_fields;
-  schema_table->fill_table= fill_failed_attempts_view;
-  return 0;
-}
+ * @brief EventHandler declaration
+ *
+ */
+Connection_event_handler * event_handler;
 
 /* Performance Schema instrumentation */
 
@@ -93,7 +46,7 @@ PSI_mutex_key key_connection_delay_mutex= PSI_NOT_INSTRUMENTED;
 static PSI_mutex_info all_connection_delay_mutex_info[]= {
     {&key_connection_delay_mutex, "connection_delay_mutex", 0}};
 
-PSI_rwlock_key key_connection_event_delay_lock=PSI_NOT_INSTRUMENTED;
+PSI_rwlock_key key_connection_event_delay_lock= PSI_NOT_INSTRUMENTED;
 
 static PSI_rwlock_info all_connection_delay_rwlock_info[]= {
     {&key_connection_event_delay_lock, "connection_event_delay_lock", 0}};
@@ -125,41 +78,6 @@ static void init_performance_schema()
 
   int count_stage= array_elements(all_connection_delay_stage_info);
   mysql_stage_register(category, all_connection_delay_stage_info, count_stage);
-}
-
-/**
-  Plugin initialization function
-
-  @param [in] plugin_info  MYSQL_PLUGIN information
-
-  @returns initialization status
-    @retval 0 Success
-    @retval 1 Failure
-*/
-
-static int connection_control_init(MYSQL_PLUGIN plugin_info)
-{
-  /*
-    Declare all performance schema instrumentation up front,
-    so it is discoverable.
-  */
-  init_performance_schema();
-
-  return 0;
-}
-
-/**
-  Plugin deinitialization
-
-  @param arg  Unused
-
-  @returns success
-*/
-
-static int connection_control_deinit(void *arg)
-{
-  // TODO clean resource
-  return 0;
 }
 
 static int64 max_connection_delay;
@@ -216,7 +134,7 @@ static void update_max_connection_delay(MYSQL_THD thd,
 {
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   max_connection_delay= new_value;
-  coordinator.getGVariables().setMaxDelay(new_value);
+  coordinator->getGVariables().setMaxDelay(new_value);
   return;
 }
 
@@ -278,7 +196,7 @@ static void update_failed_connections_threshold(MYSQL_THD thd,
   */
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   failed_connections_threshold= new_value;
-  coordinator.getGVariables().setFailedConnectionsThreshold(new_value);
+  coordinator->getGVariables().setFailedConnectionsThreshold(new_value);
   return;
 }
 
@@ -332,7 +250,7 @@ static void update_min_connection_delay(MYSQL_THD thd,
 {
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   min_connection_delay= new_value;
-  coordinator.getGVariables().setMinDelay((int64) new_value);
+  coordinator->getGVariables().setMinDelay((int64) new_value);
   return;
 }
 
@@ -377,36 +295,153 @@ static struct st_mysql_sys_var *connection_control_system_variables[3]= {
   @returns Always returns success.
 */
 
-static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff,
-                                struct system_status_var *status_var,
-                                enum enum_var_type)
+static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff)
 {
   var->type= SHOW_LONGLONG;
   var->value= buff;
   longlong *value= reinterpret_cast<longlong *>(buff);
+
+  if(!data_store){
+      *value= 0;
+        return 0;
+  }
   int64 sum= 0;
-  data_store.foreach (
+  coordinator->read_lock();
+  data_store->foreach (
       [&sum](std::pair<std::string, int64> pair) { sum+= pair.second; });
-  *value= sum;
+
+  coordinator->unlock();
   return 0;
 }
 
 /** Array of status variables. Used in plugin declaration. */
 struct st_mysql_show_var connection_control_status_variables[]= {
     {"Connection_control_delay_generated", (char *) &show_delay_generated,
-     enum_mysql_show_type::SHOW_FUNC}};
+     enum_mysql_show_type::SHOW_SIMPLE_FUNC},
+    {0, 0, (enum_mysql_show_type) 0}};
+
+
+struct st_mysql_information_schema connection_control_failed_attempts_view= {
+    MYSQL_INFORMATION_SCHEMA_INTERFACE_VERSION};
+
+namespace Show
+{
+
+static ST_FIELD_INFO failed_attempts_view_fields[]= {
+    Column("USER_HOST", Varchar(USERNAME_LENGTH + HOSTNAME_LENGTH + 8),
+           NOT_NULL, "User_host"),
+    Column("FAILED_ATTEMPTS", ULong(), NOT_NULL, "Failed_attempts"), CEnd()};
+
+} // namespace Show
+
+int fill_failed_attempts_view(THD *thd, TABLE_LIST *tables, Item *cond)
+{
+  if (check_global_access(thd, PROCESS_ACL, true))
+  {
+    push_warning_printf(thd, Sql_condition::WARN_LEVEL_WARN,
+                        ER_WRONG_ARGUMENTS, "Access denied!");
+    return 0;
+  }
+
+  TABLE *table= tables->table;
+  int64 i= 0;
+  if(data_store){
+    return 0;
+  }
+  // Get all data
+  data_store->foreach ([table, thd, i](std::pair<std::string, int64> pair) {
+    table->field[0]->store(pair.first.c_str(), pair.first.length(),
+                           system_charset_info);
+    table->field[1]->store(pair.second, true);
+    schema_table_store_record(thd, table);
+  });
+
+  return 0;
+}
 
 /**
- * @brief EventHandler declaration
- *
- */
-Connection_event_handler event_handler= Connection_event_handler();
+  View init function
 
-void release_thd(MYSQL_THD THD) { event_handler.release_thd(THD); }
+  @param [in] ptr    Handle to
+                     information_schema.connection_control_failed_attempts.
+
+  @returns Always returns 0.
+*/
+
+int connection_control_failed_attempts_view_init(void *ptr)
+{
+  ST_SCHEMA_TABLE *schema_table= (ST_SCHEMA_TABLE *) ptr;
+
+  schema_table->fields_info= Show::failed_attempts_view_fields;
+  schema_table->fill_table= fill_failed_attempts_view;
+  return 0;
+}
+
+/**
+  Plugin initialization function
+
+  @param [in] plugin_info  MYSQL_PLUGIN information
+
+  @returns initialization status
+    @retval 0 Success
+    @retval 1 Failure
+*/
+
+static int connection_control_init(MYSQL_PLUGIN plugin_info)
+{
+  /*
+    Declare all performance schema instrumentation up front,
+    so it is discoverable.
+  */
+  init_performance_schema();
+  event_handler= new Connection_event_handler();
+  data_store= new  Memory_store<std::string, int64>();
+  coordinator= new  connection_control::Connection_control_coordinator(
+        connection_control::DEFAULT_THRESHOLD,
+        connection_control::DEFAULT_MIN_DELAY,
+        connection_control::DEFAULT_MAX_DELAY);
+  my_printf_error(ME_NOTE,"connection control plugin init success",ME_NOTE|ME_ERROR_LOG);
+  return 0;
+}
+
+/**
+  Plugin deinitialization
+
+  @param arg  Unused
+
+  @returns success
+*/
+
+static int connection_control_deinit(void *arg)
+{
+  // delete data store
+  //delete coordinator
+  //delete event handler
+  if (event_handler)
+  {
+    delete event_handler;
+  }
+  if (coordinator)
+  {
+    delete coordinator;
+  }
+  if (data_store)
+  {
+    delete data_store;
+  }
+  my_printf_error(ME_NOTE, "connection control plugin uninstall success",
+                  ME_NOTE|ME_ERROR_LOG);
+  return 0;
+}
+
+
+
+
+void release_thd(MYSQL_THD THD) { event_handler->release_thd(THD); }
 
 void receive_event(MYSQL_THD THD, unsigned int event_class, const void *event)
 {
-  event_handler.receive_event(THD, event_class, event);
+  event_handler->receive_event(THD, event_class, event);
 }
 
 /*entry plugin entry point*/

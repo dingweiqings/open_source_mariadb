@@ -1,14 +1,14 @@
 #include "coordinator.h"
 #include "my_sys.h"
 #include "my_pthread.h"
-#include"mysql/psi/mysql_thread.h"
-#include"mysql/psi/psi.h"
+#include "mysql/psi/mysql_thread.h"
+#include "mysql/psi/psi.h"
 
 extern PSI_mutex_key key_connection_delay_mutex;
 extern PSI_rwlock_key key_connection_event_delay_lock;
 extern PSI_cond_key key_connection_delay_wait;
 extern PSI_stage_info stage_waiting_in_connection_control_plugin;
-extern Memory_store<std::string, int64> data_store;
+extern Memory_store<std::string, int64>* data_store;
 /* Forward declaration */
 void thd_enter_cond(MYSQL_THD thd, mysql_cond_t *cond, mysql_mutex_t *mutex,
                     const PSI_stage_info *stage, PSI_stage_info *old_stage,
@@ -20,24 +20,25 @@ void thd_exit_cond(MYSQL_THD thd, const PSI_stage_info *stage,
 
 namespace connection_control
 {
-
+/** Helper lock class */
 class Lock
 {
 private:
-  mysql_rwlock_t  m_lock;
+  mysql_rwlock_t m_lock;
+
 public:
-Lock(){
-  mysql_rwlock_init(key_connection_event_delay_lock,&m_lock);
-}
+  Lock() { mysql_rwlock_init(key_connection_event_delay_lock, &m_lock); }
   ~Lock() { mysql_rwlock_destroy(&m_lock); }
   void read_lock() { mysql_rwlock_rdlock(&m_lock); }
-  void write_lock() {
-        
-            mysql_rwlock_wrlock(&m_lock);
-   }
+  void write_lock() { mysql_rwlock_wrlock(&m_lock); }
   void unlock() { mysql_rwlock_unlock(&m_lock); }
 };
-
+/**
+ * @brief  Use conditional variables to implement delay
+ *
+ * @param thd
+ * @param time
+ */
 void condition_wait(MYSQL_THD thd, int64 time)
 {
   /** mysql_cond_timedwait requires wait time in timespec format */
@@ -88,6 +89,8 @@ void condition_wait(MYSQL_THD thd, int64 time)
   mysql_cond_destroy(&connection_delay_wait_condition);
 }
 
+static Lock lock;
+
 Connection_control_coordinator::Connection_control_coordinator(int64 threshold,
                                                                int64 minDelay,
                                                                int64 maxDelay)
@@ -95,7 +98,6 @@ Connection_control_coordinator::Connection_control_coordinator(int64 threshold,
   g_variables.setFailedConnectionsThreshold(threshold);
   g_variables.setMaxDelay(maxDelay);
   g_variables.setMinDelay(minDelay);
-  Lock lock= Lock();
   m_lock= &lock;
 }
 

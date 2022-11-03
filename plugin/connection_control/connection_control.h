@@ -21,27 +21,15 @@
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
 #include <my_global.h>
 #include<stdint.h>
-namespace connection_control{
-// extern  int64 DEFAULT_MIN_DELAY;   
-// extern int64 MIN_DELAY;
+namespace connection_control
+{
+int64 DEFAULT_MIN_DELAY= 1000;
+int64 MIN_DELAY= 1000;
 
+int64 DEFAULT_MAX_DELAY= INT32_MAX;
+int64 MAX_DELAY= INT32_MAX;
 
-// extern int64 DEFAULT_MAX_DELAY;   
-// extern int64 MAX_DELAY;
-
-
-// extern int64 DEFAULT_THRESHOLD;
-// extern int64 MIN_THRESHOLD;
-// extern int64 MAX_THRESHOLD;
-int64 DEFAULT_MIN_DELAY=1000;   
-int64 MIN_DELAY=1000;
-
-
-int64 DEFAULT_MAX_DELAY=INT64_MAX;   
-int64 MAX_DELAY=INT64_MAX;
-
-
-int64 DEFAULT_THRESHOLD=3;
-int64 MIN_THRESHOLD=3;
-int64 MAX_THRESHOLD=1000;
-}
+int64 DEFAULT_THRESHOLD= 3;
+int64 MIN_THRESHOLD= 0;
+int64 MAX_THRESHOLD= INT32_MAX;
+} // namespace connection_control

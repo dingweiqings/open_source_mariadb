@@ -1,3 +1,5 @@
+#ifndef MEMORY_STORE_H
+#define MEMORY_STORE_H
 #include <map>
 #include <iostream>
 #include<algorithm>
@@ -40,3 +42,4 @@ public:
     }
   }
 };
+#endif

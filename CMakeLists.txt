@@ -606,7 +606,5 @@ IF(NOT WITHOUT_SERVER)
 ENDIF()
 FILE(GLOB plugin ${CMAKE_CURRENT_BINARY_DIR}/plugin/**/*.so)
 ADD_CUSTOM_TARGET(copy-plugin 
-COMMAND ${CMAKE_COMMAND} -E 
-copy_if_different  
-       ${plugin}   ${CMAKE_CURRENT_BINARY_DIR}/plugin-output-dir/
+COMMAND ${CMAKE_COMMAND} -E copy   ${plugin}   ${CMAKE_CURRENT_BINARY_DIR}/plugin-output-dir/
 )

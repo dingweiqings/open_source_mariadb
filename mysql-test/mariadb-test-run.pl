@@ -215,7 +215,7 @@ my @DEFAULT_SUITES= qw(
     versioning-
     period-
     sysschema-
-    connection_control
+    connection_control-
   );
 my $opt_suites;
 
@@ -349,6 +349,12 @@ $| = 1; # Automatically flush STDOUT
 
 main();
 
+sub print_env(){
+    print "DDD-----------------";
+  while (my ($option, $value)= each( %ENV )) {
+    print  "$option= $value\n";
+  }
+}
 sub main {
   $ENV{MTR_PERL}=$^X;
 
@@ -394,7 +400,7 @@ sub main {
   check_ssl_support();
   check_debug_support();
   environment_setup();
-
+  print_env();
   if (!$opt_suites) {
     $opt_suites= join ',', collect_default_suites(@DEFAULT_SUITES);
   }
@@ -2374,6 +2380,7 @@ sub set_plugin_var($) {
   local $_ = $_[0];
   s/\.\w+$//;
   $ENV{"\U${_}_SO"} = $_[0];
+    $ENV{"\U${_}_PLUGIN_OPT"} = "--plugin-dir=$plugindir";
 }
 
 #
