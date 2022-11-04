@@ -29,15 +29,16 @@
 #include "table.h"
 #include "field.h"
 #include "sql_acl.h"
-#include"memory_store.h"
-#include"coordinator.h"
- Memory_store<std::string, int64>* data_store=nullptr;
- connection_control::Connection_control_coordinator* coordinator=nullptr;
+#include "memory_store.h"
+#include "coordinator.h"
+
+Memory_store<std::string, int64> *data_store= nullptr;
+connection_control::Connection_control_coordinator *coordinator= nullptr;
 /**
  * @brief EventHandler declaration
  *
  */
-Connection_event_handler * event_handler;
+Connection_event_handler *event_handler;
 
 /* Performance Schema instrumentation */
 
@@ -83,7 +84,6 @@ static void init_performance_schema()
 static int64 max_connection_delay;
 static int64 min_connection_delay;
 static int64 failed_connections_threshold;
-
 /**
   check() function for connection_control_max_connection_delay
 
@@ -250,7 +250,7 @@ static void update_min_connection_delay(MYSQL_THD thd,
 {
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   min_connection_delay= new_value;
-  coordinator->getGVariables().setMinDelay((int64) new_value);
+  coordinator->getGVariables().setMinDelay(min_connection_delay);
   return;
 }
 
@@ -301,15 +301,16 @@ static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff)
   var->value= buff;
   longlong *value= reinterpret_cast<longlong *>(buff);
 
-  if(!data_store){
-      *value= 0;
-        return 0;
+  if (!data_store)
+  {
+    *value= 0;
+    return 0;
   }
   int64 sum= 0;
   coordinator->read_lock();
   data_store->foreach (
       [&sum](std::pair<std::string, int64> pair) { sum+= pair.second; });
-
+  *value=sum;
   coordinator->unlock();
   return 0;
 }
@@ -319,7 +320,6 @@ struct st_mysql_show_var connection_control_status_variables[]= {
     {"Connection_control_delay_generated", (char *) &show_delay_generated,
      enum_mysql_show_type::SHOW_SIMPLE_FUNC},
     {0, 0, (enum_mysql_show_type) 0}};
-
 
 struct st_mysql_information_schema connection_control_failed_attempts_view= {
     MYSQL_INFORMATION_SCHEMA_INTERFACE_VERSION};
@@ -345,7 +345,8 @@ int fill_failed_attempts_view(THD *thd, TABLE_LIST *tables, Item *cond)
 
   TABLE *table= tables->table;
   int64 i= 0;
-  if(data_store){
+  if (data_store)
+  {
     return 0;
   }
   // Get all data
@@ -395,13 +396,21 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
   */
   init_performance_schema();
   event_handler= new Connection_event_handler();
-  data_store= new  Memory_store<std::string, int64>();
-  coordinator= new  connection_control::Connection_control_coordinator(
-        connection_control::DEFAULT_THRESHOLD,
-        connection_control::DEFAULT_MIN_DELAY,
-        connection_control::DEFAULT_MAX_DELAY);
-  my_printf_error(ME_NOTE,"connection control plugin init success",ME_NOTE|ME_ERROR_LOG);
-  return 0;
+  data_store= new Memory_store<std::string, int64>();
+  coordinator= new connection_control::Connection_control_coordinator(
+      connection_control::DEFAULT_THRESHOLD,
+      connection_control::DEFAULT_MIN_DELAY,
+      connection_control::DEFAULT_MAX_DELAY);
+  if (event_handler && data_store && coordinator)
+  {
+    my_printf_error(ME_NOTE, "Connection control plugin init success",
+                    MYF(ME_NOTE | ME_ERROR_LOG));
+    return 0;
+  }
+  my_printf_error(ER_PLUGIN_INSTALLED,
+                  "Connection control plugin init success",
+                  MYF(ME_NOTE | ME_ERROR_LOG));
+  return 1;
 }
 
 /**
@@ -415,8 +424,8 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
 static int connection_control_deinit(void *arg)
 {
   // delete data store
-  //delete coordinator
-  //delete event handler
+  // delete coordinator
+  // delete event handler
   if (event_handler)
   {
     delete event_handler;
@@ -429,13 +438,10 @@ static int connection_control_deinit(void *arg)
   {
     delete data_store;
   }
-  my_printf_error(ME_NOTE, "connection control plugin uninstall success",
-                  ME_NOTE|ME_ERROR_LOG);
+  my_printf_error(ME_NOTE, "Connection control plugin uninstall success",
+                  MYF(ME_ERROR_LOG | ME_NOTE));
   return 0;
 }
-
-
-
 
 void release_thd(MYSQL_THD THD) { event_handler->release_thd(THD); }
 

@@ -33,6 +33,7 @@ public:
   void write_lock() { mysql_rwlock_wrlock(&m_lock); }
   void unlock() { mysql_rwlock_unlock(&m_lock); }
 };
+static Lock * lock;
 /**
  * @brief  Use conditional variables to implement delay
  *
@@ -88,9 +89,38 @@ void condition_wait(MYSQL_THD thd, int64 time)
   mysql_mutex_destroy(&connection_delay_mutex);
   mysql_cond_destroy(&connection_delay_wait_condition);
 }
+  /**
+    Generates wait time
 
-static Lock lock;
+    @param count [in] Proposed delay
 
+    @returns wait time
+  */
+
+   ulonglong Connection_control_coordinator::get_wait_time(int64 count) {
+    int64 max_delay = this->g_variables.getMaxDelay();
+    int64 min_delay = this->g_variables.getMinDelay();
+    //failure count is 5 ,delay is 5s , failure count is  10 delay is 10s
+    int64 count_millisecond = count * 1000;
+
+    /*
+      if count < 0 (can happen in edge cases
+      we return max_delay.
+      Otherwise, following equation will be used:
+      wait_time = MIN(MIN(count, min_delay),
+                      max_delay)
+    */
+    return (static_cast<ulonglong>(
+        (count_millisecond >= MIN_DELAY && count_millisecond < max_delay)
+            ? (count_millisecond < min_delay ? min_delay : count_millisecond)
+            : max_delay));
+  }
+
+
+Connection_control_coordinator::~Connection_control_coordinator(){
+  delete m_lock;
+  lock= nullptr;
+}
 Connection_control_coordinator::Connection_control_coordinator(int64 threshold,
                                                                int64 minDelay,
                                                                int64 maxDelay)
@@ -98,23 +128,27 @@ Connection_control_coordinator::Connection_control_coordinator(int64 threshold,
   g_variables.setFailedConnectionsThreshold(threshold);
   g_variables.setMaxDelay(maxDelay);
   g_variables.setMinDelay(minDelay);
-  m_lock= &lock;
+  lock= new Lock();
+  m_lock= lock;
 }
 
 bool Connection_control_coordinator::coordinate(int64 failed_count,
                                                 MYSQL_THD THD)
 {
+  DBUG_ENTER("Connection_control_coordinator::coordinate");
   // Failed up to threshold
   if (failed_count > g_variables.getFailedConnectionsThreshold())
-  {
-    // TODO add coordinator strategy
-    std::cout << "Now sleep 5s" << std::endl;
-    condition_wait(THD, 5000);
-    std::cout << "Sleep 5s end" << std::endl;
+  {       
+    ulonglong wait_time = get_wait_time(failed_count  - this->g_variables.getFailedConnectionsThreshold());
+    DBUG_PRINT("info",("Wait time %lu",wait_time));
+    condition_wait(THD, get_wait_time(failed_count));
   }
-  return true;
+
+  DBUG_RETURN(true);
 }
 void Connection_control_coordinator::read_lock() { m_lock->read_lock(); }
 void Connection_control_coordinator::write_lock() { m_lock->write_lock(); }
 void Connection_control_coordinator::unlock() { m_lock->unlock(); }
+
+
 } // namespace connection_control

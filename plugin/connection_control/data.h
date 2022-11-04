@@ -4,13 +4,11 @@ namespace connection_control
 {
 class Connection_control_variables
 {
-private:
+public:
   /* Various global variables */
   int64 failed_connections_threshold;
   int64 min_connection_delay;
   int64 max_connection_delay;
-
-public:
   Connection_control_variables(int64 threshold, int64 minDelay, int64 maxDelay)
   {
     failed_connections_threshold= threshold;

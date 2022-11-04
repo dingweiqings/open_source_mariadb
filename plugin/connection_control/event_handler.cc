@@ -6,20 +6,21 @@
 /* Variables definition */
 extern Memory_store<std::string, int64>* data_store ;
 extern connection_control::Connection_control_coordinator* coordinator;
-    // connection_control::Connection_control_coordinator(
-    //     connection_control::DEFAULT_THRESHOLD,
-    //     connection_control::DEFAULT_MIN_DELAY,
-    //     connection_control::DEFAULT_MAX_DELAY);
 
 void Connection_event_handler::release_thd(MYSQL_THD THD)
 {
-  printf("%s \n", "HelloWorld-ReleaseTHD");
+  DBUG_PRINT("info",("Release connection"));
 }
 
 void Connection_event_handler::receive_event(MYSQL_THD THD,
                                              unsigned int event_class,
                                              const void *event)
 {
+  DBUG_ENTER("Connection_event_handler::receive_event");
+  //if threshold is  no zero value ,then go down
+  if(coordinator->getGVariables().getFailedConnectionsThreshold()<=0){
+    return ;
+  }
   if (event_class == MYSQL_AUDIT_CONNECTION_CLASS)
   {
     struct mysql_event_connection *connection_event=
@@ -27,8 +28,10 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
     // Only record for connection ,not disconnection
     if (connection_event->event_subclass == MYSQL_AUDIT_CONNECTION_CONNECT)
     {
+
       std::string connection_key= std::string(connection_event->user) + "@" +
                                   std::string(connection_event->host);
+       DBUG_PRINT("info",("%s failed login",connection_key));
       if (connection_event->status)
       {
         /**
@@ -36,7 +39,9 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
          *
          */
         int64 current_count= 0;
+        DBUG_PRINT("info",("Login failure, start get data lock"));
         coordinator->write_lock();
+        DBUG_PRINT("info",("Success get data store lock"));
         if (data_store->contains(connection_key))
         {
           int64 present_count= data_store->find(connection_key);
@@ -55,10 +60,14 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
       else
       {
         // Get write lock
+        DBUG_PRINT("info",("Login success, start get data store write lock"));
         coordinator->write_lock();
+        DBUG_PRINT("info",("Success data store write lock"));          
         data_store->erase(connection_key);
         coordinator->unlock();
       }
     }
   }
+
+  DBUG_VOID_RETURN;
 }
