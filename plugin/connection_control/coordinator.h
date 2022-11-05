@@ -46,5 +46,6 @@ public:
   void read_lock();
   void write_lock();
   void unlock();
+
 };
 } // namespace connection_control

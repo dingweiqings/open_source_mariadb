@@ -19,7 +19,7 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
   DBUG_ENTER("Connection_event_handler::receive_event");
   //if threshold is  no zero value ,then go down
   if(coordinator->getGVariables().getFailedConnectionsThreshold()<=0){
-    return ;
+     DBUG_VOID_RETURN;
   }
   if (event_class == MYSQL_AUDIT_CONNECTION_CLASS)
   {

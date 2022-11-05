@@ -134,7 +134,7 @@ static void update_max_connection_delay(MYSQL_THD thd,
 {
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   max_connection_delay= new_value;
-  coordinator->getGVariables().setMaxDelay(new_value);
+  coordinator->g_variables.max_connection_delay= new_value;
   return;
 }
 
@@ -196,7 +196,7 @@ static void update_failed_connections_threshold(MYSQL_THD thd,
   */
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   failed_connections_threshold= new_value;
-  coordinator->getGVariables().setFailedConnectionsThreshold(new_value);
+  coordinator->g_variables.failed_connections_threshold=new_value;
   return;
 }
 
@@ -250,7 +250,7 @@ static void update_min_connection_delay(MYSQL_THD thd,
 {
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   min_connection_delay= new_value;
-  coordinator->getGVariables().setMinDelay(min_connection_delay);
+  coordinator->g_variables.min_connection_delay= new_value;
   return;
 }
 
@@ -345,7 +345,8 @@ int fill_failed_attempts_view(THD *thd, TABLE_LIST *tables, Item *cond)
 
   TABLE *table= tables->table;
   int64 i= 0;
-  if (data_store)
+  //if not install connection control plugin, view return an empty table
+  if (!data_store)
   {
     return 0;
   }
@@ -408,7 +409,7 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
     return 0;
   }
   my_printf_error(ER_PLUGIN_INSTALLED,
-                  "Connection control plugin init success",
+                  "Connection control plugin init error",
                   MYF(ME_NOTE | ME_ERROR_LOG));
   return 1;
 }

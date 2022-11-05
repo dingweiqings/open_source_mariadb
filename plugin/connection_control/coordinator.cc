@@ -122,12 +122,10 @@ Connection_control_coordinator::~Connection_control_coordinator(){
   lock= nullptr;
 }
 Connection_control_coordinator::Connection_control_coordinator(int64 threshold,
-                                                               int64 minDelay,
-                                                               int64 maxDelay)
+                                                               int64 min_delay,
+                                                               int64 max_delay)
 {
-  g_variables.setFailedConnectionsThreshold(threshold);
-  g_variables.setMaxDelay(maxDelay);
-  g_variables.setMinDelay(minDelay);
+  g_variables= Connection_control_variables(threshold, min_delay, max_delay);
   lock= new Lock();
   m_lock= lock;
 }
@@ -139,7 +137,7 @@ bool Connection_control_coordinator::coordinate(int64 failed_count,
   // Failed up to threshold
   if (failed_count > g_variables.getFailedConnectionsThreshold())
   {       
-    ulonglong wait_time = get_wait_time(failed_count  - this->g_variables.getFailedConnectionsThreshold());
+    ulonglong wait_time = get_wait_time(failed_count  - g_variables.getFailedConnectionsThreshold());
     DBUG_PRINT("info",("Wait time %lu",wait_time));
     condition_wait(THD, get_wait_time(failed_count));
   }
