@@ -1,0 +1,2 @@
+enable_query_log;
+enable_result_log;
