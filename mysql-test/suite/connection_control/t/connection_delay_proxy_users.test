@@ -33,7 +33,7 @@ SET @@global.connection_control_min_connection_delay = 2000;
 
 # We will use client side authentication plugin for this test.
 let $USE_AUTH_PLUGIN= 1;
-let $CLIENT_AUTH_PLUGIN= $PLUGIN_AUTH_OPT;
+let $CLIENT_AUTH_PLUGIN= $CONNECTION_CONTROL_PLUGIN_OPT;
 
 --echo #-----------------------------------------------------------------------
 

@@ -112,11 +112,11 @@ connect(fail_con_u1, localhost, u1,haha,,,,SSL);
 
 --sorted_result
 SELECT * FROM INFORMATION_SCHEMA.connection_control_failed_login_attempts
-  WHERE USERHOST = '\'u1\'@\'localhost\'';
+  WHERE USER_HOST = '\'u1\'@\'localhost\'';
   
 --sorted_result
 SELECT * FROM INFORMATION_SCHEMA.connection_control_failed_login_attempts
-  WHERE USERHOST LIKE '%u2%';
+  WHERE USER_HOST LIKE '%u2%';
 
 --sorted_result
 SELECT * FROM INFORMATION_SCHEMA.connection_control_failed_login_attempts
@@ -137,7 +137,7 @@ connection default;
 --disconnect con_u2
 
 CREATE USER viewer@localhost IDENTIFIED BY 'abcd';
-GRANT CONNECTION_ADMIN ON *.* TO viewer@localhost;
+GRANT CONNECTION ADMIN ON *.* TO viewer@localhost;
 connect(con_viewer, localhost, viewer,abcd,,,,SSL);
 --echo # After successful login, corresponding entry should disappear
 --echo # from the view

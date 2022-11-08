@@ -3,12 +3,13 @@
 #include "my_pthread.h"
 #include "mysql/psi/mysql_thread.h"
 #include "mysql/psi/psi.h"
-
+#include <atomic>
 extern PSI_mutex_key key_connection_delay_mutex;
 extern PSI_rwlock_key key_connection_event_delay_lock;
 extern PSI_cond_key key_connection_delay_wait;
 extern PSI_stage_info stage_waiting_in_connection_control_plugin;
 extern Memory_store<std::string, int64>* data_store;
+extern std::atomic<int64> connection_delay_total_count;
 /* Forward declaration */
 void thd_enter_cond(MYSQL_THD thd, mysql_cond_t *cond, mysql_mutex_t *mutex,
                     const PSI_stage_info *stage, PSI_stage_info *old_stage,
@@ -140,6 +141,7 @@ bool Connection_control_coordinator::coordinate(int64 failed_count,
     ulonglong wait_time = get_wait_time(failed_count  - g_variables.getFailedConnectionsThreshold());
     DBUG_PRINT("info",("Wait time %lu",wait_time));
     condition_wait(THD, get_wait_time(failed_count));
+    connection_delay_total_count++;
   }
 
   DBUG_RETURN(true);

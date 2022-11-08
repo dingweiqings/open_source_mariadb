@@ -23,8 +23,6 @@
 #include "connection_control.h"
 #include "event_handler.h"
 #include "mysql/psi/mysql_stage.h"
-#include <cstddef>
-#include <cstdio>
 #include <mysql/plugin.h>
 #include "table.h"
 #include "field.h"
@@ -84,6 +82,7 @@ static void init_performance_schema()
 static int64 max_connection_delay;
 static int64 min_connection_delay;
 static int64 failed_connections_threshold;
+std::atomic<int64> connection_delay_total_count;
 /**
   check() function for connection_control_max_connection_delay
 
@@ -196,7 +195,11 @@ static void update_failed_connections_threshold(MYSQL_THD thd,
   */
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   failed_connections_threshold= new_value;
+  coordinator->write_lock();
   coordinator->g_variables.failed_connections_threshold=new_value;
+  connection_delay_total_count=0;
+  data_store->clear();
+  coordinator->unlock();
   return;
 }
 
@@ -306,12 +309,7 @@ static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff)
     *value= 0;
     return 0;
   }
-  int64 sum= 0;
-  coordinator->read_lock();
-  data_store->foreach (
-      [&sum](std::pair<std::string, int64> pair) { sum+= pair.second; });
-  *value=sum;
-  coordinator->unlock();
+  *value= connection_delay_total_count;
   return 0;
 }
 
@@ -328,7 +326,7 @@ namespace Show
 {
 
 static ST_FIELD_INFO failed_attempts_view_fields[]= {
-    Column("USER_HOST", Varchar(USERNAME_LENGTH + HOSTNAME_LENGTH + 8),
+    Column("USER_HOST", Varchar(USERNAME_LENGTH + HOSTNAME_LENGTH + 5*8),
            NOT_NULL, "User_host"),
     Column("FAILED_ATTEMPTS", ULong(), NOT_NULL, "Failed_attempts"), CEnd()};
 
@@ -381,7 +379,6 @@ int connection_control_failed_attempts_view_init(void *ptr)
 
 /**
   Plugin initialization function
-
   @param [in] plugin_info  MYSQL_PLUGIN information
 
   @returns initialization status
@@ -395,19 +392,31 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
     Declare all performance schema instrumentation up front,
     so it is discoverable.
   */
-  init_performance_schema();
-  event_handler= new Connection_event_handler();
-  data_store= new Memory_store<std::string, int64>();
-  coordinator= new connection_control::Connection_control_coordinator(
-      connection_control::DEFAULT_THRESHOLD,
-      connection_control::DEFAULT_MIN_DELAY,
-      connection_control::DEFAULT_MAX_DELAY);
+  connection_delay_total_count= 0;
+  if (!event_handler)
+  {
+    event_handler= new Connection_event_handler();
+  }
+  if (!data_store)
+  {
+    data_store= new Memory_store<std::string, int64>();
+  }
+  if (!coordinator)
+  {
+    coordinator= new connection_control::Connection_control_coordinator(
+        connection_control::DEFAULT_THRESHOLD,
+        connection_control::DEFAULT_MIN_DELAY,
+        connection_control::DEFAULT_MAX_DELAY);
+  }
+
   if (event_handler && data_store && coordinator)
   {
-    my_printf_error(ME_NOTE, "Connection control plugin init success",
-                    MYF(ME_NOTE | ME_ERROR_LOG));
+    // my_printf_error(ME_NOTE, "Connection control plugin init success",
+    //                 MYF(ME_NOTE | ME_ERROR_LOG));
+     init_performance_schema();
     return 0;
   }
+
   my_printf_error(ER_PLUGIN_INSTALLED,
                   "Connection control plugin init error",
                   MYF(ME_NOTE | ME_ERROR_LOG));
@@ -416,7 +425,6 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
 
 /**
   Plugin deinitialization
-
   @param arg  Unused
 
   @returns success

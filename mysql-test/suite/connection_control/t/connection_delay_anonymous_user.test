@@ -17,7 +17,7 @@
 
 --echo # Create anonymous user
 CREATE USER ''@'localhost';
-
+SELECT host,user from mysql.user;
 --echo # Save original values of connection_control variables
 SET @saved_connections_threshold = @@global.connection_control_failed_connections_threshold;
 SET @saved_max_delay = @@global.connection_control_max_connection_delay;

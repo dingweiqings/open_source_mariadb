@@ -1,5 +1,4 @@
---source include/have_debug.inc
---source include/mysql_have_debug.inc
+--source ../inc/have_debug.inc
 
 # Make sure that connection_control plugin can be loaded
 --source ../inc/have_connection_control_plugin.inc
@@ -12,37 +11,25 @@
 --source ../inc/install_connection_control_plugin.inc
 
 # We don't need to use client side authentication plugin for this test.
-let $USE_AUTH_PLUGIN= 0;
-
 --echo # Create user accounts for testing
-CREATE USER u1@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890 IDENTIFIED BY 'abcd';
-CREATE USER u2@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890 IDENTIFIED BY 'abcd';
-CREATE USER u3@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890 IDENTIFIED BY 'abcd';
+CREATE USER u1 IDENTIFIED BY 'abcd';
 
-SET GLOBAL DEBUG='+d,vio_peer_addr_fake_hostname1';
---replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error 1
---exec $MYSQL --user=u1 --host=host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890 --password='haha' -#d,vio_client_use_localhost -v test  -e "SELECT CURRENT_USER();"
+SET @old_debug=@@global.debug_dbug;
 
+SET GLOBAL DEBUG_DBUG='+d,vio_peer_addr_fake_ipv4,getnameinfo_fake_long_host,getaddrinfo_fake_good_ipv4';
 --replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error 1
---exec $MYSQL --user=u1 --host=host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890 --password='ijkl' -#d,vio_client_use_localhost -v test  -e "SELECT CURRENT_USER();"
+--error ER_ACCESS_DENIED_ERROR 
+connect('con1','127.0.0.1','u1',,test,$MASTER_MYPORT,);
 
---replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error 1
---exec $MYSQL --user=u1 --host=host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890 --password='mnop' -#d,vio_client_use_localhost -v test  -e "SELECT CURRENT_USER();"
-SET GLOBAL DEBUG='-d,vio_peer_addr_fake_hostname1';
+SET GLOBAL DEBUG_DBUG=@old_debug;
 
 -- echo # Try various queries
 
 --sorted_result
-SELECT * FROM INFORMATION_SCHEMA.connection_control_failed_login_attempts
-  WHERE USERHOST LIKE '\'u1\'@\'host_%';
+SELECT * FROM INFORMATION_SCHEMA.connection_control_failed_login_attempts;
   
 -- echo # Cleanup.
-DROP USER u1@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890;
-DROP USER u2@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890;
-DROP USER u3@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890;
+DROP USER u1;
 
 --echo # Uninstall connection_control plugin
 --source ../inc/uninstall_connection_control_plugin.inc

@@ -28,6 +28,11 @@ public:
     }
     return true;
   }
+    bool clear()
+  {
+    m_dataMap.clear();
+    return true;
+  }
   void foreach(std::function<void (std::pair<K,V>)> const &f)  {
     std::for_each(m_dataMap.cbegin(),m_dataMap.cend(),f);
   }

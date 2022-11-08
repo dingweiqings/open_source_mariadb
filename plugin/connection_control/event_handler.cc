@@ -28,10 +28,16 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
     // Only record for connection ,not disconnection
     if (connection_event->event_subclass == MYSQL_AUDIT_CONNECTION_CONNECT)
     {
-
-      std::string connection_key= std::string(connection_event->user) + "@" +
-                                  std::string(connection_event->host);
-       DBUG_PRINT("info",("%s failed login",connection_key));
+      std::string connection_key= std::string("");
+      //'user'@'host'
+      connection_key.append("'")
+          .append(connection_event->user)
+          .append("'")
+          .append("@")
+          .append("'")
+          .append(connection_event->host)
+          .append("'");
+      DBUG_PRINT("info", ("%s failed login", connection_key));
       if (connection_event->status)
       {
         /**
@@ -61,6 +67,11 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
       {
         // Get write lock
         DBUG_PRINT("info",("Login success, start get data store write lock"));
+        //According mysql work log FR2.1 , a successful login will keep delay  once delay is triggered
+        if (data_store->contains(connection_key))
+        {
+           coordinator->coordinate( data_store->find(connection_key), THD);
+        }       
         coordinator->write_lock();
         DBUG_PRINT("info",("Success data store write lock"));          
         data_store->erase(connection_key);
