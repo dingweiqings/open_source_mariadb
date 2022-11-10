@@ -17,7 +17,6 @@
 
 --echo # Create anonymous user
 CREATE USER ''@'localhost';
-SELECT host,user from mysql.user;
 --echo # Save original values of connection_control variables
 SET @saved_connections_threshold = @@global.connection_control_failed_connections_threshold;
 SET @saved_max_delay = @@global.connection_control_max_connection_delay;
@@ -33,7 +32,51 @@ let $USE_AUTH_PLUGIN= 0;
 --echo # ----------------------------------------------------------------------
 --echo
 
---echo # Following attempts will not experience any delay in server respose
+--echo # First round , following attempts will not experience any delay in server respose
+
+let $USER=u1;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
+let $DELAY_STATS=0;
+--source ../inc/check_connection_delay.inc
+
+let $USER=u2;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
+let $DELAY_STATS=0;
+--source ../inc/check_connection_delay.inc
+
+let $USER=u3;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
+let $DELAY_STATS=0;
+--source ../inc/check_connection_delay.inc
+--echo
+--echo # ----------------------------------------------------------------------
+--echo
+--echo #Second round , following attempts will not experience any delay in server respose
+
+let $USER=u1;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
+let $DELAY_STATS=0;
+--source ../inc/check_connection_delay.inc
+
+let $USER=u2;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
+let $DELAY_STATS=0;
+--source ../inc/check_connection_delay.inc
+
+let $USER=u3;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
+let $DELAY_STATS=0;
+--source ../inc/check_connection_delay.inc
+--echo
+--echo # ----------------------------------------------------------------------
+--echo
+--echo # Third round , following attempts will not experience any delay in server respose
 
 let $USER=u1;
 let $PASSWORD=hoho;

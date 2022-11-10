@@ -3,10 +3,12 @@
 #include <iostream>
 #include <string.h>
 #include "coordinator.h"
+#include "sql_class.h"
+
 /* Variables definition */
 extern Memory_store<std::string, int64>* data_store ;
 extern connection_control::Connection_control_coordinator* coordinator;
-
+void make_hash_key(MYSQL_THD thd, std::string &s);
 void Connection_event_handler::release_thd(MYSQL_THD THD)
 {
   DBUG_PRINT("info",("Release connection"));
@@ -30,13 +32,7 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
     {
       std::string connection_key= std::string("");
       //'user'@'host'
-      connection_key.append("'")
-          .append(connection_event->user)
-          .append("'")
-          .append("@")
-          .append("'")
-          .append(connection_event->host)
-          .append("'");
+      make_hash_key(THD, connection_key);
       DBUG_PRINT("info", ("%s failed login", connection_key));
       if (connection_event->status)
       {
@@ -81,4 +77,57 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
   }
 
   DBUG_VOID_RETURN;
+}
+/**
+  Create hash key of the format '<user>'@'<host>'.
+  Policy:
+  1. Use proxy_user information if available. Else if,
+  2. Use priv_user/priv_host if either of them is not empty. Else,
+  3. Use user/host
+
+  @param [in] thd        THD pointer for getting security context
+  @param [out] s         Hash key is stored here
+*/
+
+void make_hash_key(MYSQL_THD thd, std::string &s) {
+  /* Our key for hash will be of format : '<user>'@'<host>' */
+
+  /* If proxy_user is set then use it directly for lookup */
+   Security_context *sctx= thd->security_ctx;
+  const char *proxy_user = sctx->proxy_user;
+  if (proxy_user && *proxy_user) {
+    s.append(proxy_user);
+  } /* else if priv_user and/or priv_host is set, then use them */
+  else {
+    const char *priv_user = sctx->priv_user;
+    const char *priv_host = sctx->priv_host;
+    if (*priv_user || *priv_host) {
+      s.append("'");
+
+      if (*priv_user) s.append(priv_user);
+
+      s.append("'@'");
+
+      if (*priv_host) s.append(priv_host);
+
+      s.append("'");
+    } else {
+      const char *user = sctx->user;
+      const char *host = sctx->host;
+      const char *ip = sctx->ip;
+
+      s.append("'");
+
+      if (user && *user) s.append(user);
+
+      s.append("'@'");
+
+      if (host && *host)
+        s.append(host);
+      else if (ip && *ip)
+        s.append(ip);
+
+      s.append("'");
+    }
+  }
 }

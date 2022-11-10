@@ -1,5 +1,5 @@
-#include <mysql/plugin_audit.h>
 #include<my_global.h>
+#include <mysql/plugin.h>
 namespace connection_control
 {
 extern int64 DEFAULT_THRESHOLD;

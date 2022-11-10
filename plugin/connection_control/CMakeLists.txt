@@ -22,7 +22,7 @@
 MYSQL_ADD_PLUGIN(connection_control
   connection_control.cc 
   coordinator.cc
-  event_handler.cc 
+  event_handler.cc
   MODULE_ONLY  RECOMPILE_FOR_EMBEDDED
   )
 
