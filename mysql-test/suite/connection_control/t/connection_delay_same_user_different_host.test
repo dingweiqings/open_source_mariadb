@@ -14,13 +14,13 @@
 --echo # Install connection_control plugin
 --source ../inc/install_connection_control_plugin.inc
 
---echo # Create user account for testing
+--echo # Create user accounts for testing
 CREATE USER u1 IDENTIFIED BY 'abcd';
 
 --echo # Save original values of connection_control variables
 SET @saved_connections_threshold = @@global.connection_control_failed_connections_threshold;
 SET @saved_max_delay = @@global.connection_control_max_connection_delay;
-SET @saved_min_delay = @@global.connection_control_min_connection_delay;
+SET @saved_min_delay= @@global.connection_control_min_connection_delay;
 
 -- echo # Set small values for connection_control variables
 SET @@global.connection_control_failed_connections_threshold = 3;
@@ -36,92 +36,30 @@ let $USE_AUTH_PLUGIN= 0;
 
 --echo # Make enough failed attempts to trigger delays
 
-disable_result_log;
+SET @saved_debug=@@global.debug_dbug;
 
---replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error ER_ACCESS_DENIED_ERROR
-connect(fail_con_u1, localhost, u1,,,,,);
---replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error ER_ACCESS_DENIED_ERROR
-connect(fail_con_u1, localhost, u1,haha,,,,);
---replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error ER_ACCESS_DENIED_ERROR
-connect(fail_con_u1, localhost, u1,haha,,,,);
 
-enable_result_log;
+--echo # To test use the same user with  different fake host  
+
+SET GLOBAL DEBUG_DBUG="+d,vio_peer_addr_fake_ipv4,getaddrinfo_fake_bad_ipv4";
+--replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
+--error 1
+--exec $MYSQL --user=u1 --host=127.0.0.1   --password='haha' -#d,vio_client_use_localhost -v test  -e "SELECT CURRENT_USER();"
+
+
+SET GLOBAL DEBUG_DBUG="+d,vio_peer_addr_fake_ipv4,getnameinfo_fake_long_host";
+--replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
+--error 1
+--exec $MYSQL --user=u1  --host=127.0.0.1    --password='haha'  -#d,vio_client_use_localhost -v test  -e "SELECT CURRENT_USER();"
+
+SET GLOBAL DEBUG_DBUG=@saved_debug;
+
+
 
 --echo
---echo # Following attempts will experience delay in server respose
-
-# Trying with invalid passwords
-
---source ../inc/set_before_marker.inc
-
-let $USER=u1;
-let $PASSWORD=hoho;
-let $SUCCESS=0;
-let $DELAY_STATS=1;
---source ../inc/check_connection_delay.inc
-
-let $SERVER_RESPONSE_TIME= 2;
---source ../inc/set_after_marker.inc
-
---source ../inc/set_before_marker.inc
-let $USER=u1;
-let $PASSWORD=hoho;
-let $SUCCESS=0;
-let $DELAY_STATS=2;
---source ../inc/check_connection_delay.inc
-
-let $SERVER_RESPONSE_TIME= 2;
---source ../inc/set_after_marker.inc
-
---source ../inc/set_before_marker.inc
-let $USER=u1;
-let $PASSWORD=hoho;
-let $SUCCESS=0;
-let $DELAY_STATS=3;
---source ../inc/check_connection_delay.inc
-
-let $SERVER_RESPONSE_TIME= 3;
---source ../inc/set_after_marker.inc
-
---source ../inc/set_before_marker.inc
-let $USER=u1;
-let $PASSWORD=hoho;
-let $SUCCESS=0;
-let $DELAY_STATS=4;
---source ../inc/check_connection_delay.inc
-
-let $SERVER_RESPONSE_TIME= 4;
---source ../inc/set_after_marker.inc
-
-# Trying with valid passwords
-
---source ../inc/set_before_marker.inc
-let $USER=u1;
-let $PASSWORD=abcd;
-let $SUCCESS=1;
-let $DELAY_STATS=5;
---source ../inc/check_connection_delay.inc
-
-let $SERVER_RESPONSE_TIME= 4;
---source ../inc/set_after_marker.inc
-
---echo
---echo # Following attempts will not experience any delay in server respose
-
-let $USER=u1;
-let $PASSWORD=hoho;
-let $SUCCESS=0;
-let $DELAY_STATS=5;
---source ../inc/check_connection_delay.inc
-show status like '%delay%';
-let $USER=u1;
-let $PASSWORD=abcd;
-let $SUCCESS=1;
-let $DELAY_STATS=5;
---source ../inc/check_connection_delay.inc
+--echo # ----------------------------------------------------------------------
+--echo #    Show failed login 
+SELECT  * FROM  information_schema.CONNECTION_CONTROL_FAILED_LOGIN_ATTEMPTS;
 
 --echo
 --echo # ----------------------------------------------------------------------
@@ -130,14 +68,15 @@ let $DELAY_STATS=5;
 --echo # Cleanup
 
 connection default;
-show status like '%delay%';
+
 --echo # Restore original values of conenction_control variables
 SET @@global.connection_control_failed_connections_threshold = @saved_connections_threshold;
 SET @@global.connection_control_max_connection_delay = @saved_max_delay;
 SET @@global.connection_control_min_connection_delay = @saved_min_delay;
 
---echo # Remove user account created for the test
+--echo # Remove user accounts created for the test
 DROP USER u1;
+
 
 --echo # Uninstall connection_control plugin
 --source ../inc/uninstall_connection_control_plugin.inc

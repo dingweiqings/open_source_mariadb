@@ -1,0 +1,49 @@
+# Connection delay tests for valid user accounts
+
+# ----------------------------------------------------------------------
+
+# Setup
+# Install connection_control plugin
+INSTALL PLUGIN connection_control SONAME 'CONNECTION_CONTROL_LIB';
+INSTALL PLUGIN connection_control_failed_login_attempts SONAME 'CONNECTION_CONTROL_LIB';
+# Create user accounts for testing
+CREATE USER u1 IDENTIFIED BY 'abcd';
+# Save original values of connection_control variables
+SET @saved_connections_threshold = @@global.connection_control_failed_connections_threshold;
+SET @saved_max_delay = @@global.connection_control_max_connection_delay;
+SET @saved_min_delay= @@global.connection_control_min_connection_delay;
+# Set small values for connection_control variables
+SET @@global.connection_control_failed_connections_threshold = 3;
+SET @@global.connection_control_max_connection_delay = 4000;
+SET @@global.connection_control_min_connection_delay = 2000;
+
+# ----------------------------------------------------------------------
+
+# Make enough failed attempts to trigger delays
+SET @saved_debug=@@global.debug_dbug;
+# To test use the same user with  different fake host  
+SET GLOBAL DEBUG_DBUG="+d,vio_peer_addr_fake_ipv4,getaddrinfo_fake_bad_ipv4";
+SET GLOBAL DEBUG_DBUG="+d,vio_peer_addr_fake_ipv4,getnameinfo_fake_long_host";
+SET GLOBAL DEBUG_DBUG=@saved_debug;
+
+# ----------------------------------------------------------------------
+#    Show failed login 
+SELECT  * FROM  information_schema.CONNECTION_CONTROL_FAILED_LOGIN_ATTEMPTS;
+USER_HOST	FAILED_ATTEMPTS
+'u1'@'192.0.2.4'	2
+
+# ----------------------------------------------------------------------
+
+# Cleanup
+connection default;
+# Restore original values of conenction_control variables
+SET @@global.connection_control_failed_connections_threshold = @saved_connections_threshold;
+SET @@global.connection_control_max_connection_delay = @saved_max_delay;
+SET @@global.connection_control_min_connection_delay = @saved_min_delay;
+# Remove user accounts created for the test
+DROP USER u1;
+# Uninstall connection_control plugin
+UNINSTALL PLUGIN connection_control;
+UNINSTALL PLUGIN connection_control_failed_login_attempts;
+
+# ----------------------------------------------------------------------

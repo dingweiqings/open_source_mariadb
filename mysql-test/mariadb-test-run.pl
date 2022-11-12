@@ -2380,7 +2380,7 @@ sub set_plugin_var($) {
   local $_ = $_[0];
   s/\.\w+$//;
   $ENV{"\U${_}_SO"} = $_[0];
-    $ENV{"\U${_}_PLUGIN_OPT"} = "--plugin-dir=$plugindir";
+  
 }
 
 #

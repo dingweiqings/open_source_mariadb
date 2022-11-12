@@ -1,15 +1,6 @@
 disable_query_log;
 disable_result_log;
-# Copy PLUGIN_AUTH library to CONNECTION_CONTROL_OPT location
-let $auth_plugin_path= `SELECT SUBSTR('$CONNECTION_CONTROL_PLUGIN_OPT/$PLUGIN_AUTH', 14)`;
-let $connection_control_plugin_path= `SELECT SUBSTR('$CONNECTION_CONTROL_PLUGIN_OPT/$PLUGIN_AUTH', 14)`;
 
-if ($auth_plugin_path != $connection_control_plugin_path)
-{
-  --error 0, 1
-  --remove_file $connection_control_plugin_path
-  --copy_file $auth_plugin_path $connection_control_plugin_path
-}
 # Install test_plugin_server
 eval INSTALL PLUGIN test_plugin_server SONAME '$PLUGIN_AUTH';
 

@@ -8,7 +8,7 @@ extern PSI_mutex_key key_connection_delay_mutex;
 extern PSI_rwlock_key key_connection_event_delay_lock;
 extern PSI_cond_key key_connection_delay_wait;
 extern PSI_stage_info stage_waiting_in_connection_control_plugin;
-extern Memory_store<std::string, int64>* data_store;
+extern Memory_store<std::string, int64> *data_store;
 extern std::atomic<int64> connection_delay_total_count;
 /* Forward declaration */
 void thd_enter_cond(MYSQL_THD thd, mysql_cond_t *cond, mysql_mutex_t *mutex,
@@ -34,7 +34,7 @@ public:
   void write_lock() { mysql_rwlock_wrlock(&m_lock); }
   void unlock() { mysql_rwlock_unlock(&m_lock); }
 };
-static Lock * lock;
+static Lock *lock;
 /**
  * @brief  Use conditional variables to implement delay
  *
@@ -90,35 +90,36 @@ void condition_wait(MYSQL_THD thd, int64 time)
   mysql_mutex_destroy(&connection_delay_mutex);
   mysql_cond_destroy(&connection_delay_wait_condition);
 }
-  /**
-    Generates wait time
+/**
+  Generates wait time
 
-    @param count [in] Proposed delay
+  @param count [in] Proposed delay
 
-    @returns wait time
+  @returns wait time
+*/
+
+ulonglong Connection_control_coordinator::get_wait_time(int64 count)
+{
+  int64 max_delay= this->g_variables.getMaxDelay();
+  int64 min_delay= this->g_variables.getMinDelay();
+  // failure count is 5 ,delay is 5s , failure count is  10 delay is 10s
+  int64 count_millisecond= count * 1000;
+
+  /*
+    if count < 0 (can happen in edge cases
+    we return max_delay.
+    Otherwise, following equation will be used:
+    wait_time = MIN(MIN(count, min_delay),
+                    max_delay)
   */
+  return (static_cast<ulonglong>(
+      (count_millisecond >= MIN_DELAY && count_millisecond < max_delay)
+          ? (count_millisecond < min_delay ? min_delay : count_millisecond)
+          : max_delay));
+}
 
-   ulonglong Connection_control_coordinator::get_wait_time(int64 count) {
-    int64 max_delay = this->g_variables.getMaxDelay();
-    int64 min_delay = this->g_variables.getMinDelay();
-    //failure count is 5 ,delay is 5s , failure count is  10 delay is 10s
-    int64 count_millisecond = count * 1000;
-
-    /*
-      if count < 0 (can happen in edge cases
-      we return max_delay.
-      Otherwise, following equation will be used:
-      wait_time = MIN(MIN(count, min_delay),
-                      max_delay)
-    */
-    return (static_cast<ulonglong>(
-        (count_millisecond >= MIN_DELAY && count_millisecond < max_delay)
-            ? (count_millisecond < min_delay ? min_delay : count_millisecond)
-            : max_delay));
-  }
-
-
-Connection_control_coordinator::~Connection_control_coordinator(){
+Connection_control_coordinator::~Connection_control_coordinator()
+{
   delete m_lock;
   lock= nullptr;
 }
@@ -137,11 +138,13 @@ bool Connection_control_coordinator::coordinate(int64 failed_count,
   DBUG_ENTER("Connection_control_coordinator::coordinate");
   // Failed up to threshold
   if (failed_count > g_variables.getFailedConnectionsThreshold())
-  {       
-    ulonglong wait_time = get_wait_time(failed_count  - g_variables.getFailedConnectionsThreshold());
-    DBUG_PRINT("info",("Wait time %lu",wait_time));
-    condition_wait(THD, get_wait_time(failed_count));
-    connection_delay_total_count++;
+  {
+    ++connection_delay_total_count;
+    printf("coordinate total count: %lld\n",connection_delay_total_count.load());
+    ulonglong wait_time= get_wait_time(
+        failed_count - g_variables.getFailedConnectionsThreshold());
+    DBUG_PRINT("info", ("Wait time %lu", wait_time));
+    condition_wait(THD, wait_time);
   }
 
   DBUG_RETURN(true);
@@ -149,6 +152,5 @@ bool Connection_control_coordinator::coordinate(int64 failed_count,
 void Connection_control_coordinator::read_lock() { m_lock->read_lock(); }
 void Connection_control_coordinator::write_lock() { m_lock->write_lock(); }
 void Connection_control_coordinator::unlock() { m_lock->unlock(); }
-
 
 } // namespace connection_control

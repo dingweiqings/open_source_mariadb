@@ -309,7 +309,8 @@ static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff)
     *value= 0;
     return 0;
   }
-  *value= connection_delay_total_count;
+  printf("show total count: %lld\n",connection_delay_total_count.load());
+  *value= connection_delay_total_count.load();
   return 0;
 }
 
@@ -392,7 +393,7 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
     Declare all performance schema instrumentation up front,
     so it is discoverable.
   */
-  connection_delay_total_count= 0;
+  std::atomic_init(&connection_delay_total_count,0);
   if (!event_handler)
   {
     event_handler= new Connection_event_handler();
