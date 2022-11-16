@@ -140,7 +140,6 @@ bool Connection_control_coordinator::coordinate(int64 failed_count,
   if (failed_count > g_variables.getFailedConnectionsThreshold())
   {
     ++connection_delay_total_count;
-    printf("coordinate total count: %lld\n",connection_delay_total_count.load());
     ulonglong wait_time= get_wait_time(
         failed_count - g_variables.getFailedConnectionsThreshold());
     DBUG_PRINT("info", ("Wait time %lu", wait_time));

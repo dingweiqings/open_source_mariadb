@@ -38,42 +38,42 @@ connection default;
 Connection_control_delay_generated should be 1
 Variable_name	Value
 Connection_control_delay_generated	1
-@server_response_time >= 2
+abs(@server_response_time - 2) <= 2
 1
 connection default;
 # Connection attempt should fail.
 Connection_control_delay_generated should be 2
 Variable_name	Value
 Connection_control_delay_generated	2
-@server_response_time >= 2
+abs(@server_response_time - 2) <= 2
 1
 connection default;
 # Connection attempt should fail.
 Connection_control_delay_generated should be 3
 Variable_name	Value
 Connection_control_delay_generated	3
-@server_response_time >= 2
+abs(@server_response_time - 2) <= 2
 1
 connection default;
 # Connection attempt should succeed.
 Connection_control_delay_generated should be 4
 Variable_name	Value
 Connection_control_delay_generated	4
-@server_response_time >= 2
+abs(@server_response_time - 2) <= 2
 1
 connection default;
 # Connection attempt should succeed.
 Connection_control_delay_generated should be 5
 Variable_name	Value
 Connection_control_delay_generated	5
-@server_response_time >= 2
+abs(@server_response_time - 2) <= 2
 1
 connection default;
 # Connection attempt should succeed.
 Connection_control_delay_generated should be 6
 Variable_name	Value
 Connection_control_delay_generated	6
-@server_response_time >= 2
+abs(@server_response_time - 2) <= 2
 1
 # Following attempts will not experience any delay in server respose
 connection default;

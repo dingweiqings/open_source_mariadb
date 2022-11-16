@@ -96,31 +96,39 @@ let $DELAY_STATS=4;
 let $SERVER_RESPONSE_TIME= 4;
 --source ../inc/set_after_marker.inc
 
-# Trying with valid passwords
 
+--echo #The 5th failure  , but delay time  is still max delay
 --source ../inc/set_before_marker.inc
 let $USER=u1;
-let $PASSWORD=abcd;
-let $SUCCESS=1;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
 let $DELAY_STATS=5;
 --source ../inc/check_connection_delay.inc
 
 let $SERVER_RESPONSE_TIME= 4;
 --source ../inc/set_after_marker.inc
 
---echo
---echo # Following attempts will not experience any delay in server respose
-
+--echo #The 6th failure
+--source ../inc/set_before_marker.inc
 let $USER=u1;
 let $PASSWORD=hoho;
 let $SUCCESS=0;
-let $DELAY_STATS=5;
+let $DELAY_STATS=6;
 --source ../inc/check_connection_delay.inc
+
+let $SERVER_RESPONSE_TIME= 4;
+--source ../inc/set_after_marker.inc
+
+--echo #The 7th failure
+--source ../inc/set_before_marker.inc
 let $USER=u1;
-let $PASSWORD=abcd;
-let $SUCCESS=1;
-let $DELAY_STATS=5;
+let $PASSWORD=hoho;
+let $SUCCESS=0;
+let $DELAY_STATS=7;
 --source ../inc/check_connection_delay.inc
+
+let $SERVER_RESPONSE_TIME= 4;
+--source ../inc/set_after_marker.inc
 
 --echo
 --echo # ----------------------------------------------------------------------

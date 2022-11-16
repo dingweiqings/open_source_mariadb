@@ -44,7 +44,6 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
         DBUG_PRINT("info",("Login failure, start get data lock"));
         coordinator->write_lock();
         DBUG_PRINT("info",("Success get data store lock"));
-        printf("faile login connection key %s\n",connection_key.c_str());
         if (data_store->contains(connection_key))
         {
           int64 present_count= data_store->find(connection_key);
@@ -65,7 +64,6 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
         // Get write lock
         DBUG_PRINT("info",("Login success, start get data store write lock"));
         //According mysql work log FR2.1 , a successful login will keep delay  once delay is triggered
-        printf("connection key %s\n",connection_key.c_str());
         if (data_store->contains(connection_key))
         {
            coordinator->coordinate( data_store->find(connection_key)+1, THD);
@@ -99,21 +97,8 @@ void make_hash_key(MYSQL_THD thd, std::string &s) {
   const char *proxy_user = sctx->proxy_user;
   if (proxy_user && *proxy_user) {
     s.append(proxy_user);
-  } /* else if priv_user and/or priv_host is set, then use them */
-  else {
-    const char *priv_user = sctx->priv_user;
-    const char *priv_host = sctx->priv_host;
-    if (*priv_user || *priv_host) {
-      s.append("'");
-
-      if (*priv_user) s.append(priv_user);
-
-      s.append("'@'");
-
-      if (*priv_host) s.append(priv_host);
-
-      s.append("'");
-    } else {
+  } 
+ else {
       const char *user = sctx->user;
       const char *host = sctx->host;
       const char *ip = sctx->ip;
@@ -131,5 +116,5 @@ void make_hash_key(MYSQL_THD thd, std::string &s) {
 
       s.append("'");
     }
-  }
+  
 }

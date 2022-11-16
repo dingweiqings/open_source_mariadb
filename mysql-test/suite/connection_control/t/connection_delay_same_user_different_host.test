@@ -1,3 +1,4 @@
+--source ../inc/have_debug.inc
 # Make sure that connection_control plugin can be loaded
 --source ../inc/have_connection_control_plugin.inc
 
@@ -36,29 +37,26 @@ let $USE_AUTH_PLUGIN= 0;
 
 --echo # Make enough failed attempts to trigger delays
 
+FLUSH HOSTS;
+
 SET @saved_debug=@@global.debug_dbug;
 
-
---echo # To test use the same user with  different fake host  
-
-SET GLOBAL DEBUG_DBUG="+d,vio_peer_addr_fake_ipv4,getaddrinfo_fake_bad_ipv4";
+--echo # Test by using the same user with  different fake host  
+SET GLOBAL DEBUG_DBUG="+d,vio_peer_addr_fake_ipv4,getnameinfo_fake_ipv4,getaddrinfo_fake_good_ipv4";
 --replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error 1
---exec $MYSQL --user=u1 --host=127.0.0.1   --password='haha' -#d,vio_client_use_localhost -v test  -e "SELECT CURRENT_USER();"
+--error ER_ACCESS_DENIED_ERROR 
+connect (con4,"127.0.0.1",u1,'111',test,$MASTER_MYPORT,);
 
-
-SET GLOBAL DEBUG_DBUG="+d,vio_peer_addr_fake_ipv4,getnameinfo_fake_long_host";
---replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
---error 1
---exec $MYSQL --user=u1  --host=127.0.0.1    --password='haha'  -#d,vio_client_use_localhost -v test  -e "SELECT CURRENT_USER();"
 
 SET GLOBAL DEBUG_DBUG=@saved_debug;
-
-
+--replace_result $MASTER_MYSOCK MASTER_SOCKET $MASTER_MYPORT MASTER_PORT
+--error ER_ACCESS_DENIED_ERROR 
+connect (con5,"127.0.0.1",u1,'111',test,$MASTER_MYPORT,);
 
 --echo
 --echo # ----------------------------------------------------------------------
---echo #    Show failed login 
+--echo #Show failed login 
+--replace_result santa.claus.ipv4.example.com fakehost
 SELECT  * FROM  information_schema.CONNECTION_CONTROL_FAILED_LOGIN_ATTEMPTS;
 
 --echo

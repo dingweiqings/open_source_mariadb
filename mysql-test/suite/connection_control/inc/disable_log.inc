@@ -1,2 +1,0 @@
-disable_query_log;
-disable_result_log;

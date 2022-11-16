@@ -6,5 +6,5 @@ SET @after= TIMESTAMP(current_time());
 SET @server_response_time= TIMESTAMPDIFF(SECOND, @before, @after);
 enable_result_log;
 
---eval SELECT @server_response_time >= $SERVER_RESPONSE_TIME
+--eval SELECT abs(@server_response_time - $SERVER_RESPONSE_TIME) <= 2 
 enable_query_log;

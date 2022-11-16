@@ -4,6 +4,7 @@ INSTALL PLUGIN connection_control SONAME 'CONNECTION_CONTROL_LIB';
 INSTALL PLUGIN connection_control_failed_login_attempts SONAME 'CONNECTION_CONTROL_LIB';
 # Create user accounts for testing
 CREATE USER u1 IDENTIFIED BY 'abcd';
+FLUSH HOSTS;
 SET @old_debug=@@global.debug_dbug;
 SET GLOBAL DEBUG_DBUG='+d,vio_peer_addr_fake_ipv4,getnameinfo_fake_long_host,getaddrinfo_fake_good_ipv4';
 connect(127.0.0.1,u1,,test,MASTER_PORT,MASTER_SOCKET);

@@ -9,10 +9,10 @@
 --echo # Install connection_control plugin
 --source ../inc/install_connection_control_plugin.inc
 CREATE USER no_privs@localhost IDENTIFIED BY 'abcd';
---source ../inc/disable_log.inc
+
 connect(conn_no_privs, localhost, no_privs, abcd,,,,);
 connection default;
---source ../inc/enable_log.inc
+
 --echo #-----------------------------------------------------------------------
 
 --echo # Case 1 : connection_control_failed_connections_threshold
@@ -60,9 +60,9 @@ SET @@global.connection_control_failed_connections_threshold = -9223372036854775
 SELECT @@global.connection_control_failed_connections_threshold;
 
 --echo # Switch to conn_no_privs
---source ../inc/disable_log.inc
+
 connection conn_no_privs;
---source ../inc/enable_log.inc
+
 --echo # 1.3 : Use no_privs@localhost to set
 --echo #       connection_control_failed_connections_threshold to valid value
 
@@ -84,9 +84,9 @@ SELECT @@global.connection_control_failed_connections_threshold;
 --error ER_SPECIFIC_ACCESS_DENIED_ERROR
 SET @@global.connection_control_failed_connections_threshold = 9223372036854775808;
 SELECT @@global.connection_control_failed_connections_threshold;
---source ../inc/disable_log.inc
+
 connection default;
---source ../inc/enable_log.inc
+
 SET @@global.connection_control_failed_connections_threshold = @saved_value;
 SELECT @@global.connection_control_failed_connections_threshold;
 
@@ -140,9 +140,9 @@ SET@@global.connection_control_min_connection_delay = 20;
 SELECT @@global.connection_control_min_connection_delay;
 
 --echo # Switch to conn_no_privs
---source ../inc/disable_log.inc
+
 connection conn_no_privs;
---source ../inc/enable_log.inc
+
 --echo # 2.3 : Use no_privs@localhost to set
 --echo #       connection_control_min_connection_delay to valid value
 
@@ -166,9 +166,9 @@ SET @@global.connection_control_min_connection_delay = 9223372036854775808;
 SELECT @@global.connection_control_min_connection_delay;
 
 --echo # Switch to default connection
---source ../inc/disable_log.inc
+
 connection default;
---source ../inc/enable_log.inc
+
 --echo # 2.5 : Setting connection_control_min_connection_delay to a value
 --echo #       greater than connection_control_max_connection_delay
 
@@ -234,9 +234,9 @@ SET @@global.connection_control_max_connection_delay = 20;
 SELECT @@global.connection_control_max_connection_delay;
 
 --echo # Switch to conn_no_privs
---source ../inc/disable_log.inc
+
 connection conn_no_privs;
---source ../inc/enable_log.inc
+
 --echo # 3.3 : Use no_privs@localhost to set
 --echo #       connection_control_max_connection_delay to valid value
 
@@ -260,9 +260,9 @@ SET @@global.connection_control_max_connection_delay = 9223372036854775808;
 SELECT @@global.connection_control_max_connection_delay;
 
 --echo # Switch to default connection
---source ../inc/disable_log.inc
+
 connection default;
---source ../inc/enable_log.inc
+
 --echo # 3.5 : Setting connection_control_min_connection_delay to a value
 --echo #       greater than connection_control_max_connection_delay
 
@@ -280,9 +280,9 @@ SELECT @@global.connection_control_max_connection_delay;
 
 --echo #-----------------------------------------------------------------------
 --echo # Cleanup
---source ../inc/disable_log.inc
+
 disconnect conn_no_privs;
---source ../inc/enable_log.inc
+
 
 DROP USER no_privs@localhost;
 --echo # Uninstall connection_control plugin

@@ -309,7 +309,6 @@ static int show_delay_generated(MYSQL_THD thd, SHOW_VAR *var, void *buff)
     *value= 0;
     return 0;
   }
-  printf("show total count: %lld\n",connection_delay_total_count.load());
   *value= connection_delay_total_count.load();
   return 0;
 }

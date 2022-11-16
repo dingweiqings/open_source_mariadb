@@ -13,7 +13,7 @@
 # We don't need to use client side authentication plugin for this test.
 --echo # Create user accounts for testing
 CREATE USER u1 IDENTIFIED BY 'abcd';
-
+FLUSH HOSTS;
 SET @old_debug=@@global.debug_dbug;
 
 SET GLOBAL DEBUG_DBUG='+d,vio_peer_addr_fake_ipv4,getnameinfo_fake_long_host,getaddrinfo_fake_good_ipv4';
