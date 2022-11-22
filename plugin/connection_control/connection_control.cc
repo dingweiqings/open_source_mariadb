@@ -392,7 +392,7 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
     Declare all performance schema instrumentation up front,
     so it is discoverable.
   */
-  std::atomic_init(&connection_delay_total_count,0);
+  std::atomic_init<int64>(&connection_delay_total_count,0);
   if (!event_handler)
   {
     event_handler= new Connection_event_handler();
