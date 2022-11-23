@@ -1,5 +1,5 @@
 disable_query_log;
-
+--source include/not_embedded.inc
 # Check if server has support for loading plugin
 
 if (`SELECT @@have_dynamic_loading != 'YES'`) {
