@@ -6,12 +6,12 @@
 #include "sql_class.h"
 
 /* Variables definition */
-extern Memory_store<std::string, int64>* data_store ;
-extern connection_control::Connection_control_coordinator* coordinator;
+extern Memory_store<std::string, int64> *data_store;
+extern connection_control::Connection_control_coordinator *coordinator;
 void make_hash_key(MYSQL_THD thd, std::string &s);
 void Connection_event_handler::release_thd(MYSQL_THD THD)
 {
-  DBUG_PRINT("info",("Release connection"));
+  DBUG_PRINT("info", ("Release connection"));
 }
 
 void Connection_event_handler::receive_event(MYSQL_THD THD,
@@ -19,9 +19,10 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
                                              const void *event)
 {
   DBUG_ENTER("Connection_event_handler::receive_event");
-  //if threshold is  no zero value ,then go down
-  if(coordinator->getGVariables().getFailedConnectionsThreshold()<=0){
-     DBUG_VOID_RETURN;
+  // if threshold is  no zero value ,then go down
+  if (coordinator->getGVariables().getFailedConnectionsThreshold() <= 0)
+  {
+    DBUG_VOID_RETURN;
   }
   if (event_class == MYSQL_AUDIT_CONNECTION_CLASS)
   {
@@ -41,9 +42,9 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
          *
          */
         int64 current_count= 0;
-        DBUG_PRINT("info",("Login failure, start get data lock"));
+        DBUG_PRINT("info", ("Login failure, start get data lock"));
         coordinator->write_lock();
-        DBUG_PRINT("info",("Success get data store lock"));
+        DBUG_PRINT("info", ("Success get data store lock"));
         if (data_store->contains(connection_key))
         {
           int64 present_count= data_store->find(connection_key);
@@ -62,14 +63,15 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
       else
       {
         // Get write lock
-        DBUG_PRINT("info",("Login success, start get data store write lock"));
-        //According mysql work log FR2.1 , a successful login will keep delay  once delay is triggered
+        DBUG_PRINT("info", ("Login success, start get data store write lock"));
+        // According mysql work log FR2.1 , a successful login will keep delay
+        // once delay is triggered
         if (data_store->contains(connection_key))
         {
-           coordinator->coordinate( data_store->find(connection_key)+1, THD);
-        }       
+          coordinator->coordinate(data_store->find(connection_key) + 1, THD);
+        }
         coordinator->write_lock();
-        DBUG_PRINT("info",("Success data store write lock"));          
+        DBUG_PRINT("info", ("Success data store write lock"));
         data_store->erase(connection_key);
         coordinator->unlock();
       }
@@ -89,32 +91,35 @@ void Connection_event_handler::receive_event(MYSQL_THD THD,
   @param [out] s         Hash key is stored here
 */
 
-void make_hash_key(MYSQL_THD thd, std::string &s) {
+void make_hash_key(MYSQL_THD thd, std::string &s)
+{
   /* Our key for hash will be of format : '<user>'@'<host>' */
 
   /* If proxy_user is set then use it directly for lookup */
-   Security_context *sctx= thd->security_ctx;
-  const char *proxy_user = sctx->proxy_user;
-  if (proxy_user && *proxy_user) {
+  Security_context *sctx= thd->security_ctx;
+  const char *proxy_user= sctx->proxy_user;
+  if (proxy_user && *proxy_user)
+  {
     s.append(proxy_user);
-  } 
- else {
-      const char *user = sctx->user;
-      const char *host = sctx->host;
-      const char *ip = sctx->ip;
+  }
+  else
+  {
+    const char *user= sctx->user;
+    const char *host= sctx->host;
+    const char *ip= sctx->ip;
 
-      s.append("'");
+    s.append("'");
 
-      if (user && *user) s.append(user);
+    if (user && *user)
+      s.append(user);
 
-      s.append("'@'");
+    s.append("'@'");
 
-      if (host && *host)
-        s.append(host);
-      else if (ip && *ip)
-        s.append(ip);
+    if (host && *host)
+      s.append(host);
+    else if (ip && *ip)
+      s.append(ip);
 
-      s.append("'");
-    }
-  
+    s.append("'");
+  }
 }

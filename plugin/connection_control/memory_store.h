@@ -2,8 +2,8 @@
 #define MEMORY_STORE_H
 #include <map>
 #include <iostream>
-#include<algorithm>
-#include<functional>
+#include <algorithm>
+#include <functional>
 template <typename K, typename V> class Memory_store
 {
 private:
@@ -28,15 +28,16 @@ public:
     }
     return true;
   }
-    bool clear()
+  bool clear()
   {
     m_dataMap.clear();
     return true;
   }
-  void foreach(std::function<void (std::pair<K,V>)> const &f)  {
-    std::for_each(m_dataMap.cbegin(),m_dataMap.cend(),f);
+  void foreach (std::function<void(std::pair<K, V>)> const &f)
+  {
+    std::for_each(m_dataMap.cbegin(), m_dataMap.cend(), f);
   }
-  
+
   void print()
   {
     // m_dataMap.insert(pair<K,V>(name,value));

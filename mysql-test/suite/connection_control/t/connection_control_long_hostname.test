@@ -1,4 +1,4 @@
---source ../inc/have_debug.inc
+--source include/have_debug.inc
 
 # Make sure that connection_control plugin can be loaded
 --source ../inc/have_connection_control_plugin.inc

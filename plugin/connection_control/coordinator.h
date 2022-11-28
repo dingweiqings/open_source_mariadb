@@ -30,15 +30,15 @@ public:
    * @return false
    */
   bool coordinate(int64 failed_count, MYSQL_THD THD);
-    /**
-    Generates wait time
+  /**
+  Generates wait time
 
-    @param count [in] Proposed delay
+  @param count [in] Proposed delay
 
-    @returns wait time
-  */
+  @returns wait time
+*/
 
-  ulonglong get_wait_time(int64 count) ;
+  ulonglong get_wait_time(int64 count);
   connection_control::Connection_control_variables getGVariables()
   {
     return g_variables;
@@ -46,6 +46,5 @@ public:
   void read_lock();
   void write_lock();
   void unlock();
-
 };
 } // namespace connection_control

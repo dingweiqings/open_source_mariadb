@@ -196,8 +196,8 @@ static void update_failed_connections_threshold(MYSQL_THD thd,
   longlong new_value= *(reinterpret_cast<const longlong *>(save));
   failed_connections_threshold= new_value;
   coordinator->write_lock();
-  coordinator->g_variables.failed_connections_threshold=new_value;
-  connection_delay_total_count=0;
+  coordinator->g_variables.failed_connections_threshold= new_value;
+  connection_delay_total_count= 0;
   data_store->clear();
   coordinator->unlock();
   return;
@@ -326,7 +326,7 @@ namespace Show
 {
 
 static ST_FIELD_INFO failed_attempts_view_fields[]= {
-    Column("USER_HOST", Varchar(USERNAME_LENGTH + HOSTNAME_LENGTH + 5*8),
+    Column("USER_HOST", Varchar(USERNAME_LENGTH + HOSTNAME_LENGTH + 5 * 8),
            NOT_NULL, "User_host"),
     Column("FAILED_ATTEMPTS", ULong(), NOT_NULL, "Failed_attempts"), CEnd()};
 
@@ -343,7 +343,7 @@ int fill_failed_attempts_view(THD *thd, TABLE_LIST *tables, Item *cond)
 
   TABLE *table= tables->table;
   int64 i= 0;
-  //if not install connection control plugin, view return an empty table
+  // if not install connection control plugin, view return an empty table
   if (!data_store)
   {
     return 0;
@@ -392,7 +392,7 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
     Declare all performance schema instrumentation up front,
     so it is discoverable.
   */
-  std::atomic_init<int64>(&connection_delay_total_count,0);
+  std::atomic_init<int64>(&connection_delay_total_count, 0);
   if (!event_handler)
   {
     event_handler= new Connection_event_handler();
@@ -413,12 +413,11 @@ static int connection_control_init(MYSQL_PLUGIN plugin_info)
   {
     // my_printf_error(ME_NOTE, "Connection control plugin init success",
     //                 MYF(ME_NOTE | ME_ERROR_LOG));
-     init_performance_schema();
+    init_performance_schema();
     return 0;
   }
 
-  my_printf_error(ER_PLUGIN_INSTALLED,
-                  "Connection control plugin init error",
+  my_printf_error(ER_PLUGIN_INSTALLED, "Connection control plugin init error",
                   MYF(ME_NOTE | ME_ERROR_LOG));
   return 1;
 }
